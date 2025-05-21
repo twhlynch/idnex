@@ -384,14 +384,14 @@ export const commands = [
         options: [
             {
                 name: "id1",
-                description: "user id of original creator",
+                description: "user id of potential theif",
                 required: true,
                 type: 3
             },
             {
                 name: "id2",
-                description: "user id of potential theif",
-                required: true,
+                description: "user id of original creator or blank for all verified levels",
+                required: false,
                 type: 3
             }
         ],

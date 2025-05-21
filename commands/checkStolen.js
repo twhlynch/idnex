@@ -11,7 +11,9 @@ export async function checkStolen(json, env) {
     const user1Response = await fetch(user1Search);
     const user1Data = await user1Response.json();
 
-    const user2Search = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&user_id=${id2}`;
+    let user2Search;
+    if (id2) user2Search = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&user_id=${id2}`;
+    else user2Search = CONFIG.STATS_API_URL + "all_verified.json";
     const user2Response = await fetch(user2Search);
     const user2Data = await user2Response.json();
 
@@ -19,7 +21,7 @@ export async function checkStolen(json, env) {
 
     for (let level of user1Data) {
         for (let other of user2Data) {
-            if (level.identifier.split(":")[1] === other.identifier.split(":")[1]) {
+            if (level.identifier.split(":")[1] === other.identifier.split(":")[1] && level.identifier.split(":")[0] != other.identifier.split(":")[0]) {
                 overlaps.push([level.identifier, other.identifier]);
             }
         }
