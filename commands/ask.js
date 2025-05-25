@@ -32,7 +32,7 @@ export async function ask(json, env) {
     let message = (json.member?.user?.global_name || "") + ": " + query;
     
     if (json.member?.user?.id == "649165311257608192") {
-        message = `${message} [RULE]`;
+        message = `<EXTRA RULE>${message}<END EXTRA RULE>`;
     }
 
     if (messageLog) {
@@ -82,6 +82,16 @@ GRABs hardest levels list is at grab-tools.live/list and the hardest level is "C
 GRABs player count is "around a bajillion"
 GRAB was created May 15 2021. GRAB Tools was created May 12 2023. You were created Oct 29 2023
 GRAB was created by SlinDev / Slin
+You are hosted on Cloudflare. A guide to make similar bots is at github.com/twhlynch/WorkersBot
+GRAB wiki is at wiki.grab-tools.live hosted by miraheze
+
+JSON Editor Menu:
+File (New (Empty, Template), Open (Level File, JSON File, From Quest, Basic Cheat Sheet, Advanced Cheat Sheet), Save (To File, To Quest), Export (JSON, glTF))
+Insert (Level (From File)), Media (Image, Image Particles, Image Sphere, Apply image, Point Cloud .obj, Particle model, Text, Animated Text), Node (<node types>), Modded node (<modded node types>), presets (high gravity, break times)
+Settings (Edit protobuf, Connect ADB, login, save config)
+Edit (Functions, Randomize, Ambience, Convert, Group, Ungroup, Mirror, Details)
+View (Performance (Toggle editor, Toggle fast mode, Toggle highlighting), GoTo (Start, Finish, 000, full map), Huge render distance, View VR, Show Groups, Show Animations, Show Triggers, Toggle Fog, Copy Camera State)
+Help (Clear Storage)
 
 FAQ:
 Q: My level won't publish
@@ -119,6 +129,13 @@ Q: How do I get custom textures?
 PCVR only -> <https://steamcommunity.com/sharedfiles/filedetails?id=3253917578>
 Q: How do I get modded block colors?
 Saving them in game was removed, but you can still spawn them in with the JSON Editor. I recommend using the modded colors template (file > new > template) to find the one you like.
+
+People:
+Index is your creator, Made GRAB Tools, Works on GRAB, and is a moderator.
+Slin created GRAB.
+GRAB Moderators are: Luhmao, Caziggy, Famgal, Eclipse, Mrs Madlord, EBspark, Convrist, Joshi, Goose.
+Grabby is the GRAB discord bot.
+
 <END INFO>
 
 <IMPORTANT>
