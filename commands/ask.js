@@ -219,7 +219,7 @@ ${message}`
         type: 4,
         data: {
             tts: false,
-            content: data?.candidates[0]?.content?.parts[0]?.text || ":3",
+            content: (data?.candidates[0]?.content?.parts[0]?.text || ":3").slice(0, 1999),
             embeds: [],
             allowed_mentions: { parse: [] }
         }
