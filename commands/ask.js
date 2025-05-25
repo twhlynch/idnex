@@ -1,15 +1,4 @@
 export async function ask(json, env) {
-    // if (json.member.user.id != "649165311257608192")  {
-    //     return Response.json({
-    //         type: 4,
-    //         data: {
-    //             tts: false,
-    //             content: ":3",
-    //             embeds: [],
-    //             allowed_mentions: { parse: [] }
-    //         }
-    //     });
-    // }
     const query = json.data.options[0].value;
 
     if (query.length > 300 && json.member.user.id != "649165311257608192") {
@@ -92,6 +81,85 @@ Settings (Edit protobuf, Connect ADB, login, save config)
 Edit (Functions, Randomize, Ambience, Convert, Group, Ungroup, Mirror, Details)
 View (Performance (Toggle editor, Toggle fast mode, Toggle highlighting), GoTo (Start, Finish, 000, full map), Huge render distance, View VR, Show Groups, Show Animations, Show Triggers, Toggle Fog, Copy Camera State)
 Help (Clear Storage)
+
+Here is a highly abstracted copy of grabs protobuf level format such that its syntactically incorrect, but you should be able to understand it. when users ask how to make things in the JSON editor, give them json equivalent structures.
+Vec{float x,y,z}Vec2{float x,y}Quaternion{float x,y,z,w}Color{float r,g,b,a}
+enum LevelNodeShape{CUBE=1000;SPHERE=1001;CYLINDER=1002;PYRAMID=1003;PRISM=1004;CONE=1005}
+enum LevelNodeMaterial{DEFAULT=0;GRABBABLE=1;ICE=2;LAVA=3;WOOD=4;GRAPPLABLE=5;GRAPPLABLE_LAVA=6;GRABBABLE_CRUMBLING=7;DEFAULT_COLORED=8;BOUNCING=9;SNOW=10}
+Level{
+int formatVersion,maxCheckpointCount,defaultSpawnPointID;
+str title,creators,description;
+str[]tags;
+AmbienceSettings ambienceSettings;
+LevelNode[]levelNodes;}
+AmbienceSettings{
+Color skyZenithColor,skyHorizonColor;
+float sunAltitude,sunAzimuth,sunSize,fogDensity;}
+LevelNodeGroup{
+Vec position,scale;
+Quaternion rotation;
+LevelNode[]childNodes;}
+LevelNodeStart{Vec position;Quaternion rotation;float radius;str name}
+LevelNodeFinish{Vec position;float radius}
+LevelNodeStatic{
+LevelNodeShape shape;
+LevelNodeMaterial material;
+Vec position,scale;
+Quaternion rotation;
+Color color1,color2;
+bool isNeon,isTransparent;}
+LevelNodeCrumbling{
+LevelNodeShape shape;
+LevelNodeMaterial material;
+Vec position,scale;
+Quaternion rotation;
+float stableTime,respawnTime;}
+LevelNodeSign{
+Vec position;
+Quaternion rotation;
+str text;}
+LevelNodeGravity{
+Mode mode ={DEFAULT=0;NOLEGS=1};
+Vec position,scale,direction;
+Quaternion rotation;}
+LevelNodeLobbyTerminal{
+Vec position;
+Quaternion rotation;}
+LevelNodeParticleEmitter{
+Vec position,scale,velocity,velocityMin,velocityMax,accelerationMin,accelerationMax;
+Quaternion rotation;
+int particlesPerSecond;
+Color startColor,endColor;
+Vec2 lifeSpan,startSize,endSize;}
+TriggerSourceBasic{Type type ={HAND=0;HEAD=1;GRAPPLE=2;FEET=3;BLOCK=4}}
+TriggerSource{oneof{TriggerSourceBasic triggerSourceBasic}}
+TriggerTargetAnimation{
+int objectID;
+str animationName;
+bool loop,reverse;
+Mode mode ={STOP=0;START=1;TOGGLE=2;TOGGLE_REVERSE=3;RESTART=4;RESET=5}}
+TriggerTargetSubLevel{str levelIdentifier,spawnPoint}
+TriggerTarget{oneof{TriggerTargetAnimation triggerTargetAnimation;TriggerTargetSubLevel triggerTargetSubLevel;}}
+LevelNodeTrigger{
+LevelNodeShape shape;
+Vec position,scale;
+Quaternion rotation;
+bool isShared;
+TriggerSource[]triggerSources;
+TriggerTarget[]triggerTargets;}
+AnimationFrame{
+float time;
+Vec position;
+Quaternion rotation;}
+Animation{
+str name;
+AnimationFrame[]frames;
+Direction direction={RESTART=0;PINGPONG=1}
+float speed;}
+LevelNode{
+oneof{/*any levelnodeX can go here*/}
+Animation[]animations;
+int activeAnimation;}
 
 FAQ:
 Q: My level won't publish
