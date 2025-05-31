@@ -53,7 +53,7 @@ export async function checkStolen(json, env) {
                     "name": "",
                     "value": CONFIG.LEVEL_URL + o[0] + "\n" + CONFIG.LEVEL_URL + o[1],
                     "inline": false
-                }})
+                }}).slice(0, 10)
             }],
             allowed_mentions: { parse: [] }
         }
