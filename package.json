@@ -7,7 +7,6 @@
     },
     "scripts": {
         "register": "node update_commands.js",
-        "publish": "wrangler deploy",
-        "reset": "node reset.js"
+        "publish": "wrangler deploy"
     }
 }
