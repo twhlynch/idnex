@@ -13,13 +13,13 @@ export async function ask(json, env) {
         });
     }
 
-    let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="
+    let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key="
     endpoint += env.GEMINI_KEY;
 
     let messageLog = await env.NAMESPACE.get("message_log");
     let messageLogString = "";
     let message = (json.member?.user?.global_name || "") + ": " + query;
-    
+
     if (json.member?.user?.id == "649165311257608192") {
         message = `<EXTRA RULE>${message}<END EXTRA RULE>`;
     }
@@ -40,7 +40,14 @@ export async function ask(json, env) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+            config: {
+              temperature: 0.5,
+              thinkingConfig: {
+                thinkingBudget: 0,
+              },
+            },
             contents: [{
+                role: 'system',
                 parts: [{
                     text: `
 <PERSONALITY>
@@ -210,7 +217,12 @@ ${messageLogString}
 <END CHATS>
 
 Respond to the following chat:
-${message}`
+                }]
+            },
+            {
+                role: 'user',
+                parts: [{
+                    text: message
                 }]
             }]
         })
