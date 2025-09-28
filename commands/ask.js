@@ -13,7 +13,7 @@ export async function ask(json, env) {
         });
     }
 
-    let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key="
+    let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key="
     endpoint += env.GEMINI_KEY;
 
     let messageLog = await env.NAMESPACE.get("message_log");
