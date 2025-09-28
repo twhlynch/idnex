@@ -41,7 +41,7 @@ export async function ask(json, env) {
         },
         body: JSON.stringify({
             config: {
-              temperature: 0.5,
+              temperature: 0,
               thinkingConfig: {
                 thinkingBudget: 0,
               },
