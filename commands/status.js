@@ -1,28 +1,32 @@
 const SERVICES = [
   {
     name: "AWS",
-    url: "https://health.aws.amazon.com/public/currentevents",
+    api: "https://health.aws.amazon.com/public/currentevents",
+    url: "https://health.aws.amazon.com/health/status",
     status(obj) {
-      return !obj.length;
+      return obj === "��[]"; // aws, why
     },
   },
   {
     name: "Epic Online Services",
-    url: "https://status.epicgames.com/api/v2/status.json",
+    api: "https://status.epicgames.com/api/v2/status.json",
+    url: "https://status.epicgames.com/",
     status(obj) {
       return ["none", "minor"].includes(obj.status.indicator);
     },
   },
   {
     name: "Cloudflare",
-    url: "https://www.cloudflarestatus.com/api/v2/status.json",
+    api: "https://www.cloudflarestatus.com/api/v2/status.json",
+    url: "https://www.cloudflarestatus.com/",
     status(obj) {
       return ["none", "minor"].includes(obj.status.indicator);
     },
   },
   {
     name: "Meta",
-    url: "https://metastatus.com/data/orgs.json",
+    api: "https://metastatus.com/data/orgs.json",
+    url: "https://metastatus.com/",
     status(obj) {
       return !obj.find((org) => {
         return org.services.find((service) => {
@@ -35,13 +39,15 @@ const SERVICES = [
   },
   {
     name: "GitHub",
-    url: "https://www.githubstatus.com/api/v2/status.json",
+    api: "https://www.githubstatus.com/api/v2/status.json",
+    url: "https://www.githubstatus.com/",
     status(obj) {
       return ["none", "minor"].includes(obj.status.indicator);
     },
   },
   {
     name: "GRAB",
+    api: "https://api.slin.dev/grab-status/v1/status",
     url: "https://api.slin.dev/grab-status/v1/status",
     status(obj) {
       return obj[0].text === "All services are online.\n\n";
@@ -49,6 +55,7 @@ const SERVICES = [
   },
   {
     name: "GRAB API",
+    api: "https://api.slin.dev/grab/v1/get_level_browser?version=1",
     url: "https://api.slin.dev/grab/v1/get_level_browser?version=1",
     status(obj) {
       return !!obj;
@@ -60,7 +67,7 @@ export async function status(json, env) {
   const results = await Promise.all(
     SERVICES.map(async (service) => {
       try {
-        const response = await fetch(service.url, {
+        const response = await fetch(service.api, {
           method: "GET",
         });
         if (!response.ok)
@@ -77,9 +84,10 @@ export async function status(json, env) {
             result: success ? "✅ Operational" : "❌ Problems",
           };
         } catch {
+          const success = service.status(text);
           return {
             ...service,
-            result: "❌ Error",
+            result: success ? "✅ Operational" : "❌ Problems",
           };
         }
       } catch {
