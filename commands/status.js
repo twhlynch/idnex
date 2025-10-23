@@ -4,7 +4,7 @@ const SERVICES = [
     api: "https://health.aws.amazon.com/public/currentevents",
     url: "https://health.aws.amazon.com/health/status",
     status(obj) {
-      return obj === "��[]"; // aws, why
+      return obj.length === 6; // wtf aws returns ��[]
     },
   },
   {
