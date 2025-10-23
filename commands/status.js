@@ -62,7 +62,6 @@ export async function status(json, env) {
       try {
         const response = await fetch(service.url, {
           method: "GET",
-          timeout: 2000,
         });
         if (!response.ok)
           return {
