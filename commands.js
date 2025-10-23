@@ -411,7 +411,13 @@ export const commands = [
         ],
         integration_types: [0, 1],
         contexts: [0, 1, 2]
-    }
+    },
+    {
+        name: "status",
+        description: "Get relevant server statuses",
+        integration_types: [0, 1],
+        contexts: [0, 1, 2]
+    },
     // {
     //     name: "Add to fanart",
     //     type: 3,

@@ -30,6 +30,7 @@ import { echo } from './commands/echo.js'
 import { block } from './commands/block.js'
 import { unblock } from './commands/unblock.js'
 import { checkStolen } from './commands/checkStolen.js'
+import { status } from './commands/status.js'
 
 export default {
     async fetch(request, env, ctx) {
@@ -82,6 +83,7 @@ export default {
                 block,
                 unblock,
                 "checkstolen": checkStolen,
+                status,
             };
             if (command in commands) {
                 const response =  await commands[command](json, env);
