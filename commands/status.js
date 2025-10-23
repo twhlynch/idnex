@@ -68,7 +68,7 @@ export async function status(json, env) {
             ...service,
             result: "❌ Error",
           };
-        const text = response.text();
+        const text = await response.text();
         try {
           const json = JSON.parse(text);
           const success = service.status(json);
