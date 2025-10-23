@@ -139,6 +139,7 @@ ${messageLogString}
 <END CHATS>
 
 Respond to the following chat:
+    ${message}`,
                 }]
             },
             {
