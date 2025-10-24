@@ -30,9 +30,12 @@ const SERVICES = [
     status(obj) {
       return !obj.find((org) => {
         return org.services.find((service) => {
-          return !["No known issues", "Low disruptions", "Medium disruptions"].includes(
-            service.status,
-          );
+          return ![
+            "Resolved",
+            "No known issues",
+            "Low disruptions",
+            "Medium disruptions",
+          ].includes(service.status);
         });
       });
     },
