@@ -14,11 +14,11 @@ export default async function checkStolen(json, env) {
 	if (levels_2 == null) return UTILS.error('Failed to get levels 2');
 
 	const overlaps = levels_1.flatMap((l1) => {
-		const parts_1 = l1.identifier.split(':');
+		const [creator_1, name_1] = l1.identifier.split(':');
 		return levels_2
 			.filter((l2) => {
-				const parts_2 = l2.identifier.split(':');
-				parts_1[1] === parts_2[1] && parts_1[0] !== parts_2[0];
+				const [creator_2, name_2] = l2.identifier.split(':');
+				return name_1 === name_2 && creator_1 !== creator_2;
 			})
 			.map((l2) => [l1.identifier, l2.identifier]);
 	});
@@ -31,18 +31,11 @@ export default async function checkStolen(json, env) {
 		description: overlaps.length + ' levels',
 		color: 0x500000,
 		fields: overlaps
-			.map((o) => {
-				return {
-					name: '',
-					value:
-						CONFIG.LEVEL_URL +
-						o[0] +
-						'\n' +
-						CONFIG.LEVEL_URL +
-						o[1],
-					inline: false,
-				};
-			})
+			.map(([a, b]) => ({
+				name: '',
+				value: `${CONFIG.LEVEL_URL}${a}\n${CONFIG.LEVEL_URL}${b}`,
+				inline: false,
+			}))
 			.slice(0, 10),
 	};
 
