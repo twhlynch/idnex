@@ -1,24 +1,18 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-export async function newestUnbeaten(json, env) {
-    const levelResponse = await fetch(CONFIG.STATS_API_URL + "unbeaten_levels.json");
-    const levelData = await levelResponse.json();
-    const level = levelData[levelData.length - 1];
-    const fields = [
-        {
-            "name": `Days Unbeaten`,
-            "value": `${Math.floor((Date.now() - level?.update_timestamp) / 1000 / 60 / 60 / 24)}`,
-            "inline": false
-        }
-    ];
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: "",
-            embeds: [await UTILS.generateLevelEmbed(level, fields)],
-            allowed_mentions: { parse: [] }
-        }
-    });
+export default async function newestUnbeaten(json, env) {
+	const levels = await UTILS.get_unbeaten_levels();
+	if (levels === null) return UTILS.error('Failed getting levels');
+	if (!levels.length) return UTILS.error('No unbeaten levels');
+
+	const level = levels[levels.length - 1];
+	const fields = [
+		{
+			name: `Days Unbeaten`,
+			value: `${UTILS.timestamp_to_days(level.update_timestamp)}`,
+			inline: false,
+		},
+	];
+	return UTILS.response('', await UTILS.generate_level_embed(level, fields));
 }

@@ -1,261 +1,151 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-async function addChange(change, env) {
-    let changes = await env.NAMESPACE.get("list_changes");
-    if (!changes) changes = "[]";
-    let changesData = JSON.parse(changes);
+const LIST_KV_KEY = 'list';
+const CHANGES_KV_KEY = 'list_changes';
+const ROLE_ID = '1224307852248612986';
 
-    let changeIndex = changesData.findIndex(item => item.id == change.id);
-    if (changeIndex == -1) {
-        changesData.push(change);
-    } else {
-        if (change.description == "added to position") {
-            if (changesData[changeIndex].i == change.i) {
-                changesData.splice(changeIndex, 1);
-            } else {
-                changesData[changeIndex].description = "moved to position";
-                changesData[changeIndex].i = change.i;
-            }
-        } else if (change.description == "moved to position") {
-            changesData[changeIndex].description = "moved to position";
-            changesData[changeIndex].i = change.i;
-        } else if (change.description == "removed from position") {
-            if (changesData[changeIndex].i == change.i) {
-                changesData.splice(changeIndex, 1);
-            } else {
-                changesData[changeIndex].description = "removed from position";
-            }
-        }
-    }
+async function add_change(change, env) {
+	let changes = await env.NAMESPACE.get(CHANGES_KV_KEY);
+	if (!changes) changes = '[]';
+	let changes_data = JSON.parse(changes);
 
-    await env.NAMESPACE.put("list_changes", JSON.stringify(changesData));
+	let last_change_index = changes_data.findIndex(
+		(item) => item.id == change.id,
+	);
+	if (last_change_index === -1) {
+		changes_data.push(change);
+	} else {
+		const last_change = changes_data[last_change_index];
+
+		if (change.description === 'added to position') {
+			if (last_change.i === change.i) {
+				changes_data.splice(last_change, 1);
+			} else {
+				last_change.description = 'moved to position';
+				last_change.i = change.i;
+			}
+		} else if (change.description === 'moved to position') {
+			last_change.description = 'moved to position';
+			last_change.i = change.i;
+		} else if (change.description === 'removed from position') {
+			if (last_change.i == change.i) {
+				changes_data.splice(last_change, 1);
+			} else {
+				last_change.description = 'removed from position';
+			}
+		}
+	}
+
+	await env.NAMESPACE.put(CHANGES_KV_KEY, JSON.stringify(changes_data));
 }
 
-export async function hardest(json, env) {
-    const hardestRoleId = "1224307852248612986";
-    const func = json.data.options[0].value;
-    if (func == "list") {
-        let list = await env.NAMESPACE.get("list");
-        if (list) {
-            const listData = JSON.parse(list);
-            const description = [];
-            for (let i = 0; i < 10; i++) {
-                const item = listData[i];
-                description.push(`**${i+1}**. ${item.title}`);
-            }
-            const embeds = [{
-                title: "Hardest Maps List",
-                description: description.join("\n"),
-                color: 0xff0000
-            }];
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: "",
-                    embeds: embeds,
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-    } else if (func == "page") {
-        let list = await env.NAMESPACE.get("list");
-        if (list) {
-            const page = json.data.options[1].value - 1;
-            const listData = JSON.parse(list);
-            const description = [];
-            for (let i = Math.max(50 * page, 0); i < Math.min(50 * page + 50, listData.length); i++) {
-                const item = listData[i];
-                description.push(`${i+1} ${item.title}`);
-            }
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: "",
-                    embeds: [{
-                        title: "Hardest Maps List",
-                        description: description.join("\n"),
-                        color: 0xff0000
-                    }],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-    } else if (func == "add") {
-        let canEditHardest = false;
-        if (json?.member?.roles) {
-            json.member.roles.forEach(role => {
-                if (role == hardestRoleId) {
-                    canEditHardest = true;
-                }
-            });
-        }
-        if (!canEditHardest) {
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: `You don't have permission to do that`,
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-        let list = await env.NAMESPACE.get("list");
-        if (list) {
-            let listData = JSON.parse(list);
-            let levelLink = json.data.options[1].value;
-            let position = json.data.options[2].value;
-            if (typeof levelLink != "string") {
-                levelLink = json.data.options[2].value;
-                position = json.data.options[1].value;
-            }
-            const levelId = levelLink.split("level=")[1];
-            const levelUrl = `${CONFIG.API_URL}details/${levelId.replace(":", "/")}`;
-            const levelResponse = await fetch(levelUrl);
-            const levelData = await levelResponse.json();
-            const listItem = {
-                "title": levelData.title,
-                "id": levelId,
-                "creator": (levelData.creators || []).length > 0 ? levelData.creators[0] : "",
-            };
-            let extra = "";
-            if (position) {
-                listData.splice(position - 1, 0, listItem);
-                extra = `at position ${position}`;
-            } else {
-                position = listData.length + 1;
-                listData.push(listItem);
-            }
+export default async function hardest(json, env) {
+	let { command, link, number } = UTILS.options(json);
 
-            let change = {
-                ...listItem,
-                "description": "added to position",
-                "i": position - 1
-            }
-            await addChange(change, env);
+	if (!['add', 'remove', 'move', 'list', 'page'].includes(command))
+		return UTILS.error('Invalid command');
 
-            await env.NAMESPACE.put("list", JSON.stringify(listData));
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: `Added ${levelData.title} to list ${extra}`,
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-    } else if (func == "remove") {
-        let canEditHardest = false;
-        if (json?.member?.roles) {
-            json.member.roles.forEach(role => {
-                if (role == hardestRoleId) {
-                    canEditHardest = true;
-                }
-            });
-        }
-        if (!canEditHardest) {
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: `You don't have permission to do that`,
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-        let list = await env.NAMESPACE.get("list");
-        if (list) {
-            let listData = JSON.parse(list);
-            const levelPosition = json.data.options[1].value;
-            const index = levelPosition - 1;
-            const change = {
-                "title": listData[index].title,
-                "id": listData[index].id,
-                "creator": listData[index].creator,
-                "description": "removed from position",
-                "i": index
-            };
-            await addChange(change, env);
-            listData.splice(index, 1);
-            await env.NAMESPACE.put("list", JSON.stringify(listData));
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: `Removed ${change.title} from list`,
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-    } else if (func == "move") {
-        let canEditHardest = false;
-        if (json?.member?.roles) {
-            json.member.roles.forEach(role => {
-                if (role == hardestRoleId) {
-                    canEditHardest = true;
-                }
-            });
-        }
-        if (!canEditHardest) {
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: `You don't have permission to do that`,
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-        let list = await env.NAMESPACE.get("list");
-        if (list) {
-            let listData = JSON.parse(list);
-            const levelLink = json.data.options[1].value;
-            const newIndex = json.data.options[2].value;
-            const levelId = levelLink.split("?level=")[1];
-            const oldIndex = listData.findIndex(item => item.id == levelId);
-            if (oldIndex > -1) {
-                const oldItem = {
-                    "title": listData[oldIndex].title,
-                    "id": listData[oldIndex].id,
-                    "creator": listData[oldIndex].creator,
-                }
-                listData.splice(oldIndex, 1);
-                listData.splice(newIndex - 1, 0, oldItem);
+	const permission = json?.member?.roles?.find((role) => role === ROLE_ID);
+	const modifying = ['add', 'remove', 'move'].includes(command);
 
-                const change = {
-                    ...oldItem,
-                    "description": "moved to position",
-                    "i": newIndex - 1
-                };
-                await addChange(change, env);
+	if (modifying && !permission)
+		return UTILS.error("You don't have permission to do that");
 
-                await env.NAMESPACE.put("list", JSON.stringify(listData));
-                return Response.json({
-                    type: 4,
-                    data: {
-                        tts: false,
-                        content: `Moved ${oldItem.title} from ${oldIndex + 1} to ${newIndex}`,
-                        embeds: [],
-                        allowed_mentions: { parse: [] }
-                    }
-                });
-            }
-        }
-    }
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: "invalid command",
-            embeds: [],
-            allowed_mentions: { parse: [] }
-        }
-    });
+	const list = await env.NAMESPACE.get(LIST_KV_KEY);
+	if (!list) return UTILS.error('Error getting list');
+
+	const list_data = JSON.parse(list);
+
+	if (command === 'list') {
+		const description = list_data
+			.slice(0, 10)
+			.map((item, i) => `**${i + 1}**. ${item.title}`)
+			.join('\n');
+
+		const embed = {
+			title: 'Hardest Maps List',
+			description: description,
+			color: 0xff0000,
+		};
+		return UTILS.response('', embed);
+	} else if (command === 'page') {
+		const page = number - 1;
+
+		const description = list_data
+			.slice(
+				Math.max(50 * page, 0),
+				Math.min(50 * page + 50, list_data.length),
+			)
+			.map((item, i) => `${i + 1} ${item.title}`)
+			.join('\n');
+
+		const embed = {
+			title: 'Hardest Maps List',
+			description: description,
+			color: 0xff0000,
+		};
+		return UTILS.response('', embed);
+	} else if (command === 'add') {
+		const level_id = link.split('level=')[1];
+		const level = await UTILS.get_level_details(level_id);
+		if (level === null) return UTILS.error('Failed to get level details');
+
+		const { title, identifier: id, creators } = level;
+		const creator = creators?.length ? creators[0] : '';
+
+		const item = { title, id, creator };
+
+		if (!number) number = list_data.length + 1;
+		list_data.splice(number - 1, 0, item);
+
+		let change = {
+			...item,
+			description: 'added to position',
+			i: number - 1,
+		};
+		await add_change(change, env);
+		await env.NAMESPACE.put(LIST_KV_KEY, JSON.stringify(list_data));
+
+		return UTILS.response(`Added ${title} to list at position ${number}`);
+	} else if (command === 'remove') {
+		const index = number - 1;
+		const item = list_data[index];
+		if (!item) return UTILS.error('Invalid position');
+
+		const change = {
+			...item,
+			description: 'removed from position',
+			i: index,
+		};
+		await add_change(change, env);
+
+		list_data.splice(index, 1);
+		await env.NAMESPACE.put(LIST_KV_KEY, JSON.stringify(list_data));
+
+		return UTILS.response(`Removed ${item.title} from list`);
+	} else if (command === 'move') {
+		const new_index = number - 1;
+		const level_id = link.split('?level=')[1];
+		const old_index = list_data.findIndex((item) => item.id == level_id);
+		if (old_index === -1) return UTILS.error('Could not find level');
+
+		const item = list_data[old_index];
+
+		list_data.splice(old_index, 1);
+		list_data.splice(new_index, 0, item);
+
+		const change = {
+			...item,
+			description: 'moved to position',
+			i: new_index,
+		};
+		await add_change(change, env);
+
+		await env.NAMESPACE.put(LIST_KV_KEY, JSON.stringify(list_data));
+
+		return UTILS.response(
+			`Moved ${item.title} from ${old_index + 1} to ${number}`,
+		);
+	}
 }

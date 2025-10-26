@@ -1,38 +1,33 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-export async function getHardest(json, env) {
-    let list = await env.NAMESPACE.get("list");
-    if (list) {
-        const listData = JSON.parse(list);
+const KV_KEY = 'list';
 
-        let positionInput = json.data.options[0].value;
-        positionInput == 0 ? positionInput = 1 : {}
+export default async function getHardest(json, env) {
+	const list = await env.NAMESPACE.get(KV_KEY);
+	if (!list) return UTILS.error('Error getting list');
 
-        if (typeof positionInput == "string" && positionInput.includes("?level=")) {
-            let id = positionInput.split("?level=")[1].split("&")[0];
-            for (let i = 0; i < listData.length; i++) {
-                if (listData[i].id == id) {
-                    positionInput = i + 1;
-                    break;
-                }
-            }
-        }
-        let position = positionInput - 1;
-        const level = listData[position];
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: "",
-                embeds: [{
-                    title: `#${position + 1} Hardest Level`,
-                    description: `**${level.title}** by ${level.creator}`,
-                    url: CONFIG.LEVEL_URL + (level.id || ""),
-                    color: 0xff0000
-                }],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
+	const data = JSON.parse(list);
+
+	let { position, url } = UTILS.options(json);
+
+	if (position) {
+		position = Math.min(data.length - 1, Math.max(0, position - 1));
+	} else if (url) {
+		const id = url.split('?level=')[1].split('&')[0];
+		position = data.findIndex((level) => level.id == id);
+		if (!position) return UTILS.error('Level not found');
+	} else {
+		return UTILS.error('Must specify at least one variable');
+	}
+
+	const { title, creator, id } = data[position];
+	const embed = {
+		title: `#${position + 1} Hardest Level`,
+		description: `**${title}** by ${creator}`,
+		url: CONFIG.LEVEL_URL + id,
+		color: 0xff0000,
+	};
+
+	return UTILS.response('', embed);
 }

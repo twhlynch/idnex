@@ -1,31 +1,12 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-export async function level(json, env) {
-    const queryTitle = json.data.options[0].value;
-    const queryCreator = json.data.options.length > 1 ? json.data.options[1].value : '';
-    const levelData = await UTILS.getLevel(queryTitle, queryCreator);
-    
-    if(levelData) {
-        const url = CONFIG.LEVEL_URL + levelData.identifier;
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: url,
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    } else {
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: "Could not find a level with that title and creator",
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
+export default async function level(json, env) {
+	const { title, creator } = UTILS.options(json);
+
+	const level = await UTILS.getLevel(title, creator || '');
+	if (level === null) return UTILS.error('Could not find a matching level');
+
+	const url = CONFIG.LEVEL_URL + level.identifier;
+	return UTILS.response(url);
 }

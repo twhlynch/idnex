@@ -1,25 +1,23 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-export async function trending(json, env) {
-    const levelData = await UTILS.getTrendingLevels();
-    const top5 = levelData.slice(0, 5);
-    let description = [];
-    top5.forEach((level, index) => {
-        description.push(`**#${index + 1}** ${level.title} - ${level.change}`);
-    });
-    const embeds = [{
-        title: `Trending Levels`,
-        description: description.join("\n"),
-        color: 0x00ffff
-    }];
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: "",
-            embeds: embeds,
-            allowed_mentions: { parse: [] }
-        }
-    });
+export default async function trending(json, env) {
+	const levels = await UTILS.get_trending_levels();
+	if (levels === null) return UTILS.error('Failed getting levels');
+
+	const description = levels
+		.slice(0, 5)
+		.map((level, i) => {
+			const { title, change } = level;
+			return `**#${i + 1}** ${title} - ${change}`;
+		})
+		.join('\n');
+
+	const embed = {
+		title: `Trending Levels`,
+		description: description,
+		color: 0x00ffff,
+	};
+
+	return UTILS.response('', embed);
 }

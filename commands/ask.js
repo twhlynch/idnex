@@ -1,55 +1,52 @@
-export async function ask(json, env) {
-    const query = json.data.options[0].value;
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-    if (query.length > 300 && json.member.user.id != "649165311257608192") {
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: ":3",
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
+const KV_KEY = 'message_log';
 
-    let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/learnlm-2.0-flash-experimental:generateContent?key="
-    endpoint += env.GEMINI_KEY;
+export default async function ask(json, env) {
+	let { message } = UTILS.options(json);
 
-    let messageLog = await env.NAMESPACE.get("message_log");
-    let messageLogString = "";
-    let message = (json.member?.user?.global_name || "") + ": " + query;
+	if (message.length > 300 && json.member.user.id !== CONFIG.ADMIN_USER)
+		return UTILS.error('Request too long');
 
-    if (json.member?.user?.id == "649165311257608192") {
-        message = `<EXTRA RULE>${message}<END EXTRA RULE>`;
-    }
+	message = (json.member?.user?.global_name || 'user') + ': ' + message;
+	if (json.member?.user?.id === CONFIG.ADMIN_USER) {
+		message = `<EXTRA RULE>${message}<END EXTRA RULE>`;
+	}
 
-    if (messageLog) {
-        messageLog = JSON.parse(messageLog);
-        messageLogString = `<MSG>\n${messageLog.join("\n<END>\n<MSG>\n")}\n<END>`;
-        messageLog.push(message);
-        if (messageLog.length > 10) {
-            messageLog.shift();
-        }
-        await env.NAMESPACE.put("message_log", JSON.stringify(messageLog));
-    }
+	let log = await env.NAMESPACE.get(KV_KEY);
+	let message_log = '';
+	if (log) {
+		log = JSON.parse(log);
+		message_log = `<MSG>\n${log.join('\n<END>\n<MSG>\n')}\n<END>`;
+		log.push(message);
+		if (log.length > 10) log.shift();
 
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            config: {
-              temperature: 0,
-              thinkingConfig: {
-                thinkingBudget: 0,
-              },
-            },
-            contents: [{
-                role: 'system',
-                parts: [{
-                    text: `
+		await env.NAMESPACE.put('message_log', JSON.stringify(message_log));
+	}
+
+	const endpoint =
+		CONFIG.GEMINI_API +
+		'models/learnlm-2.0-flash-experimental:generateContent?key=' +
+		env.GEMINI_KEY;
+	const response = await fetch(endpoint, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			config: {
+				temperature: 0,
+				thinkingConfig: {
+					thinkingBudget: 0,
+				},
+			},
+			contents: [
+				{
+					role: 'system',
+					parts: [
+						{
+							text: `
 <PERSONALITY>
 You are known as idnex. A stick figure with bunny ears.
 You were created by "index" as a silly version of himself.
@@ -135,29 +132,35 @@ When saying links, format them with markdown as done here and make sure to add h
 You are a discord bot.
 
 <RECENT CHAT LOG>
-${messageLogString}
+${message_log}
 <END CHATS>
 
 Respond to the following chat:
-    ${message}`,
-                }]
-            },
-            {
-                role: 'user',
-                parts: [{
-                    text: message
-                }]
-            }]
-        })
-    });
-    const data = await response.json();
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: (data?.candidates[0]?.content?.parts[0]?.text || ":3").slice(0, 1999),
-            embeds: [],
-            allowed_mentions: { parse: [] }
-        }
-    });
+`,
+						},
+					],
+				},
+				{
+					role: 'user',
+					parts: [
+						{
+							text: message,
+						},
+					],
+				},
+			],
+		}),
+	});
+
+	try {
+		const data = await response.json();
+		return UTILS.response(
+			(data?.candidates[0]?.content?.parts[0]?.text || ':3').slice(
+				0,
+				1999,
+			),
+		);
+	} catch {
+		return UTILS.error('Failed to generate response');
+	}
 }

@@ -1,41 +1,23 @@
-export async function unblock(json, env) {
-    if (json.member.user.id != "649165311257608192")  {
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: ":3",
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
-    const id = json.data.options[0].value;
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-    let list = await env.NAMESPACE.get("blocked");
-    if (list) {
-        let listData = JSON.parse(list);
-        listData = listData.filter(item => item!=id);
+const KV_KEY = 'blocked';
 
-        await env.NAMESPACE.put("blocked", JSON.stringify(listData));
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: `Unblocked ${id}`,
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
+export default async function unblock(json, env) {
+	const permission = json.member.user.id === CONFIG.ADMIN_USER;
+	if (!permission) return UTILS.error('Not permitted');
 
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: "an error occurred",
-            embeds: [],
-            allowed_mentions: { parse: [] }
-        }
-    });
+	const { id } = UTILS.options(json);
+
+	const list = await env.NAMESPACE.get(KV_KEY);
+	if (!list) return UTILS.error('KV Error');
+
+	let data = JSON.parse(list);
+
+	data = data.filter((item) => item != id);
+
+	const value = JSON.stringify(data);
+	await env.NAMESPACE.put(KV_KEY, value);
+
+	return UTILS.response(`Blocked ${id}`);
 }

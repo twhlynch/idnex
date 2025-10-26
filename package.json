@@ -1,12 +1,12 @@
 {
-    "type": "module",
-    "dependencies": {
-        "node-fetch": "^2.6.1",
-        "wrangler": "^3.41.0",
-        "tweetnacl": "^1.0.3"
-    },
-    "scripts": {
-        "register": "node update_commands.js",
-        "publish": "wrangler deploy"
-    }
+	"type": "module",
+	"dependencies": {
+		"node-fetch": "^2.6.1",
+		"tweetnacl": "^1.0.3",
+		"wrangler": "^4.45.0"
+	},
+	"scripts": {
+		"register": "node update_commands.js",
+		"publish": "wrangler deploy"
+	}
 }

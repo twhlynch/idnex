@@ -1,157 +1,147 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-export async function script(json, env) {
-    const filterer = json.data.options[0].value; // "level.change > 1000" // props op value // multiple with &&
-    const limiter = json.data.options[1].value; // 20 // integer
-    const returner = json.data.options[2].value; // "level.title" // props // multiple with &&
+function resolve_path(object, path) {
+	const keys = path.trim().replace('level.', '').split('.');
+	for (const key of keys) {
+		object = object[key];
+		if (object === undefined) {
+			return undefined;
+		}
+	}
+	return object;
+}
 
-    const response = await fetch(CONFIG.STATS_API_URL + "all_verified.json");
-    const data = await response.json();
+export default async function script(json, env) {
+	const { filter, limit, return: ret } = UTILS.options(json);
+	if (!filter?.length || !limit?.length || !ret?.length)
+		return UTILS.error('All parameters are required');
 
-    const filtered = [];
-    for (let level of data) {
-        let valid = true;
+	const data = await UTILS.get_all_levels();
 
-        filterer.split("&&").forEach(c => {
-            const value = c.trim()
-            const parts = value.split(" ");
-            const properties = parts[0].replace("level.", "").split(".");
-            
-            let operator = parts[1];
-            let compare = parts[2];
+	const filtered = [];
+	for (let level of data) {
+		const segments = filter.split('&&').map((s) => s.trim());
+		const valid = !segments.find((segment) => {
+			const parts = segment.split(' ').map((s) => s.trim());
 
-            for (let i = 3; i < parts.length; i++) {
-                compare += ' ' + parts[i];
-            }
+			let operator = parts[1];
+			let compare = parts[2];
 
-            let anyCase = false;
-            if (operator.charAt(0) == "~") {
-                operator = operator.replace("~", "");
-                compare = compare.toLowerCase();
-                anyCase = true;
-            }
+			for (let i = 3; i < parts.length; i++) {
+				compare += ' ' + parts[i];
+			}
 
-            if (!compare?.includes("\"")) {
-                if (compare?.includes(".")) {
-                    compare = parseFloat(compare)
-                } else {
-                    compare = parseInt(compare, 10);
-                }
-            } else {
-                compare = compare.replaceAll("\"", "");
-            }
+			let anyCase = false;
+			if (operator.startsWith('~')) {
+				operator = operator.slice(1);
+				compare = compare.toLowerCase();
+				anyCase = true;
+			}
 
-            let prop = level;
-            for (let key of properties) {
-                prop = prop[key];
-                if (prop === undefined) {
-                    valid = false;
-                    break;
-                }
-            }
+			if (!compare?.includes('"')) {
+				if (compare?.includes('.')) {
+					compare = parseFloat(compare);
+				} else {
+					compare = parseInt(compare, 10);
+				}
+			} else {
+				compare = compare.replaceAll('"', '');
+			}
 
-            if (anyCase && typeof prop == "string") {
-                prop = prop.toLowerCase();
-            }
+			let prop = resolve_path(level, parts[0]);
+			if (prop === undefined) return true;
 
-            switch (operator) {
-                case ">":
-                    if (prop <= compare) {
-                        valid = false;
-                    }
-                    break;
-                case "<":
-                    if (prop >= compare) {
-                        valid = false;
-                    }
-                    break;
-                case ">=":
-                    if (prop < compare) {
-                        valid = false;
-                    }
-                    break;
-                case "<=":
-                    if (prop > compare) {
-                        valid = false;
-                    }
-                    break;
-                case "==":
-                    if (prop != compare) {
-                        valid = false;
-                    }
-                    break;
-                case "!=":
-                    if (prop == compare) {
-                        valid = false;
-                    }
-                    break;
-                case "in":
-                    if (!(compare?.includes && compare?.includes(prop))) {
-                        valid = false;
-                    }
-                    break;
-                case "!in":
-                    if ((compare?.includes && compare?.includes(prop))) {
-                        valid = false;
-                    }
-                    break;
-                case "includes":
-                    if (!(prop?.includes && prop?.includes(compare))) {
-                        valid = false;
-                    }
-                    break;
-                case "!includes":
-                    if ((prop?.includes && prop?.includes(compare))) {
-                        valid = false;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        });
-        
-        if (valid) {
-            level.link = CONFIG.LEVEL_URL + level.identifier;
-            level.creator = level.creators && level.creators.length > 0 ? level.creators[0] : '';
-            level.creator_link = CONFIG.PLAYER_URL + level.identifier.split(":")[0];
-            level.date = new Date(1000 * (level.update_timestamp || level.creation_timestamp || 0)).toDateString();
-            filtered.push(level);
-            if (filtered.length >= limiter) {
-                break;
-            }
-        }
-    }
-    let result = "";
-    filtered.forEach(level => { 
-        let returnValue = "";
-        returner.split("&&").forEach(c => {
-            if (c.includes("\"")) {
-                returnValue += c.trim().replaceAll("\"", "").replaceAll("\\n", "\n");
-            } else {
-                const properties = c.trim().replace("level.", "").split(".");
-                let prop = level;
-                for (let key of properties) {
-                    prop = prop[key];
-                    if (prop == undefined) {
-                        break;
-                    }
-                }
-                if (prop != undefined) {
-                    returnValue += prop + " ";
-                }
-            }
-        });
-        result += returnValue + "\n";
-    });
+			if (anyCase && typeof prop == 'string') {
+				prop = prop.toLowerCase();
+			}
 
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: "```\n" + result + "```",
-            embeds: [],
-            allowed_mentions: { parse: [] }
-        }
-    });
+			switch (operator) {
+				case '>':
+					if (prop <= compare) {
+						return true;
+					}
+					break;
+				case '<':
+					if (prop >= compare) {
+						return true;
+					}
+					break;
+				case '>=':
+					if (prop < compare) {
+						return true;
+					}
+					break;
+				case '<=':
+					if (prop > compare) {
+						return true;
+					}
+					break;
+				case '==':
+					if (prop != compare) {
+						return true;
+					}
+					break;
+				case '!=':
+					if (prop == compare) {
+						return true;
+					}
+					break;
+				case 'in':
+					if (!(compare?.includes && compare.includes(prop))) {
+						return true;
+					}
+					break;
+				case '!in':
+					if (compare?.includes && compare.includes(prop)) {
+						return true;
+					}
+					break;
+				case 'includes':
+					if (!(prop?.includes && prop.includes(compare))) {
+						return true;
+					}
+					break;
+				case '!includes':
+					if (prop?.includes && prop.includes(compare)) {
+						return true;
+					}
+					break;
+				default:
+					return true;
+			}
+
+			return false;
+		});
+
+		if (valid) {
+			filtered.push(level);
+			if (filtered.length >= limit) break;
+		}
+	}
+
+	filtered.forEach((level) => {
+		level.link = CONFIG.LEVEL_URL + level.identifier;
+		level.creator = level.creators?.length ? level.creators[0] : '';
+		level.creator_link = CONFIG.PLAYER_URL + level.identifier.split(':')[0];
+		level.creation_timestamp = level.creation_timestamp ?? 0;
+		level.update_timestamp =
+			level.update_timestamp ?? level.creation_timestamp;
+		level.date = new Date(1000 * level.update_timestamp).toDateString();
+	});
+
+	const result = filtered
+		.map((level) => {
+			const segments = ret.split('&&').map((s) => s.trim());
+			return segments
+				.map((s) =>
+					s.includes('"')
+						? s.replaceAll('"', '').replaceAll('\\n', '\n')
+						: (resolve_path(level, s) || '') + ' ',
+				)
+				.join('');
+		})
+		.join('\n');
+
+	return UTILS.response('```\n' + result + '\n```');
 }

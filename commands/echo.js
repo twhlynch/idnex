@@ -1,23 +1,9 @@
-export async function echo(json, env) {
-    const text = json.data.options[0].value;
-    if (text.includes('@')) {
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: ":3",
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
-    return Response.json({
-        type: 4,
-        data: {
-            tts: false,
-            content: text,
-            embeds: [],
-            allowed_mentions: { parse: [] }
-        }
-    });
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
+
+export default async function echo(json, env) {
+	const message = UTILS.options(json);
+	if (message.includes('@')) return UTILS.response(':3');
+
+	return UTILS.response(message);
 }

@@ -1,48 +1,30 @@
-import CONFIG from '../config.js'
-import UTILS from '../utils.js'
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
 
-export async function oldest(json, env) {
-    const queryCreator = json.data.options[0].value;
-    const userSearch = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&type=user_name&search_term=${queryCreator}`;
-    const searchResponse = await fetch(userSearch);
-    const searchData = await searchResponse.json();
-    if(searchData.length >= 1) {
-        const user = searchData[0];
-        const userId = user.user_id;
-        const levelSearch = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&user_id=${userId}`;
-        const levelResponse = await fetch(levelSearch);
-        const levelData = await levelResponse.json();
-        if (levelData.length >= 1) {
-            const level = levelData[levelData.length - 1];
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: CONFIG.LEVEL_URL + level.identifier,
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        } else {
-            return Response.json({
-                type: 4,
-                data: {
-                    tts: false,
-                    content: "Could not find a level for that creator",
-                    embeds: [],
-                    allowed_mentions: { parse: [] }
-                }
-            });
-        }
-    } else {
-        return Response.json({
-            type: 4,
-            data: {
-                tts: false,
-                content: "Could not find a creator with that username",
-                embeds: [],
-                allowed_mentions: { parse: [] }
-            }
-        });
-    }
+export default async function newest(json, env) {
+	const { creator } = UTILS.options(json);
+
+	if (creator) {
+		const player = await UTILS.get_player(creator);
+		if (player === null) return UTILS.error('Failed to find player');
+
+		const { user_name, user_id } = player;
+
+		const levels = await UTILS.get_player_levels(user_id);
+		if (!levels === null)
+			return UTILS.error(`Failed to get levels for ${user_name}`);
+		if (!levels.length) return UTILS.error(`${user_name} has no levels`);
+
+		return UTILS.response(
+			CONFIG.LEVEL_URL + levels[levels.length - 1].identifier,
+		);
+	}
+
+	const levels = await UTILS.get_levels('', creator);
+	if (levels === null || !levels.length)
+		return UTILS.error('Failed to get levels');
+
+	return UTILS.response(
+		CONFIG.LEVEL_URL + levels[levels.length - 1].identifier,
+	);
 }
