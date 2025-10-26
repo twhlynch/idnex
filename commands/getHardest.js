@@ -11,12 +11,13 @@ export default async function getHardest(json, env) {
 
 	let { position, url } = UTILS.options(json);
 
-	if (position) {
+	if (position !== undefined) {
 		position = Math.min(data.length - 1, Math.max(0, position - 1));
-	} else if (url) {
+	} else if (url !== undefined) {
+		if (!url.includes('?level=')) return UTILS.error('Invalid url');
 		const id = url.split('?level=')[1].split('&')[0];
 		position = data.findIndex((level) => level.id == id);
-		if (!position) return UTILS.error('Level not found');
+		if (position === -1) return UTILS.error('Level not found');
 	} else {
 		return UTILS.error('Must specify at least one variable');
 	}

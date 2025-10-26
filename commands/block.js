@@ -13,7 +13,7 @@ export default async function block(json, env) {
 	if (!list) return UTILS.error('KV Error');
 
 	const data = JSON.parse(list);
-	data.push(id);
+	data.push(id.trim());
 
 	const value = JSON.stringify(data);
 	await env.NAMESPACE.put(KV_KEY, value);

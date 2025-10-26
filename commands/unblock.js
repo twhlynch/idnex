@@ -19,5 +19,5 @@ export default async function unblock(json, env) {
 	const value = JSON.stringify(data);
 	await env.NAMESPACE.put(KV_KEY, value);
 
-	return UTILS.response(`Blocked ${id}`);
+	return UTILS.response(`Unblocked ${id}`);
 }

@@ -43,7 +43,7 @@ function response(content, ...embeds) {
 
 function options(json) {
 	let opts = {};
-	for (const option of json.data.opts) {
+	for (const option of json?.data?.options ?? []) {
 		opts[option.name] = option.value;
 	}
 	return opts;
@@ -126,7 +126,9 @@ async function request(url, callback = (data) => data) {
 	try {
 		const data = JSON.parse(text);
 		return callback(data);
-	} catch {}
+	} catch (e) {
+		console.error(e);
+	}
 
 	return null;
 }
@@ -171,7 +173,8 @@ async function get_player(query) {
 }
 
 async function get_levels(title, creator) {
-	const url = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&type=search&search_term=${title}`;
+	let url = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}`;
+	url += title ? `&type=search&search_term=${title}` : '&type=newest';
 	return await request(url, (data) => {
 		if (creator?.length) {
 			return data.filter((level) =>
@@ -226,7 +229,7 @@ function leaderboard_embed(leaderboard, level) {
 	const { title, identifier } = level;
 
 	// for 0 padding
-	const maxDecimals = math.max(
+	const maxDecimals = Math.max(
 		leaderboard.map((entry) => {
 			entry.best_time.toString().split('.')[1].length;
 		}),
@@ -235,7 +238,7 @@ function leaderboard_embed(leaderboard, level) {
 	let description = [];
 	for (let i = 0; i < Math.min(10, leaderboard.length); i++) {
 		const { user_name, best_time } = leaderboard[i];
-		const time = UTILS.formatTime(best_time, maxDecimals);
+		const time = UTILS.format_time(best_time, maxDecimals);
 		const row = `**${i + 1}**. ${user_name} - ${time}`;
 		description.push(row);
 	}
@@ -337,7 +340,7 @@ function player_stats_embed(player, levels) {
 		type: 'rich',
 		title: user_name,
 		description:
-			`**Levels:** #${user_level_count}\n` +
+			`**Levels:** ${user_level_count}\n` +
 			`**Verified maps:** ${UTILS.number_with_commas(stats.verified_maps)}\n` +
 			`**Total plays:** ${UTILS.number_with_commas(stats.plays)}\n` +
 			`**Verified plays:** ${UTILS.number_with_commas(stats.verified_plays)}\n` +
@@ -384,7 +387,7 @@ function player_info_embed(player, show_cosmetics = false) {
 	const unix_time = Math.floor(join_date.getTime() / 1000);
 	const join_string = `<t:${unix_time}>`;
 
-	const cosmetics = '';
+	let cosmetics = '';
 	if (show_cosmetics) {
 		Object.entries(items).forEach((item) => {
 			const [key, value] = item;
@@ -396,10 +399,12 @@ function player_info_embed(player, show_cosmetics = false) {
 
 			const cleaned_value = value
 				.replace(/_basic$/, '')
+				.replace(/_202[0-9]/, '')
+				.replace(/^rotation_/, '')
 				.replace(key_parts.join('_') + '_', '')
 				.replaceAll('_', ' ');
 
-			cosmetics.push(`**${cleaned_key}:** ${cleaned_value}\n`);
+			cosmetics += `**${cleaned_key}:** ${cleaned_value}\n`;
 		});
 	}
 
@@ -426,7 +431,7 @@ function player_info_embed(player, show_cosmetics = false) {
 		type: 'rich',
 		title: user_name,
 		description:
-			`**Levels:** #${user_level_count}\n` +
+			`**Levels:** ${user_level_count}\n` +
 			`**Primary:** #${primary}\n` +
 			`**Secondary:** #${secondary}\n` +
 			cosmetics,

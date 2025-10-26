@@ -7,7 +7,7 @@ const MESSAGE_ACTION = {
 };
 const STRING_OPTION = { type: 3 };
 const NUMBER_OPTION = { type: 4 };
-const BOOL_OPTION = { type: 4 };
+const BOOL_OPTION = { type: 5 };
 const CHOICE = (value) => {
 	return {
 		name: value,
@@ -72,7 +72,7 @@ export const commands = [
 			{
 				name: 'creator',
 				description: 'creators username',
-				required: true,
+				required: false,
 				...STRING_OPTION,
 			},
 		],

@@ -10,9 +10,6 @@ export default async function ask(json, env) {
 		return UTILS.error('Request too long');
 
 	message = (json.member?.user?.global_name || 'user') + ': ' + message;
-	if (json.member?.user?.id === CONFIG.ADMIN_USER) {
-		message = `<EXTRA RULE>${message}<END EXTRA RULE>`;
-	}
 
 	let log = await env.NAMESPACE.get(KV_KEY);
 	let message_log = '';
@@ -22,12 +19,12 @@ export default async function ask(json, env) {
 		log.push(message);
 		if (log.length > 10) log.shift();
 
-		await env.NAMESPACE.put('message_log', JSON.stringify(message_log));
+		await env.NAMESPACE.put(KV_KEY, JSON.stringify(log));
 	}
 
 	const endpoint =
 		CONFIG.GEMINI_API +
-		'models/learnlm-2.0-flash-experimental:generateContent?key=' +
+		'models/gemini-2.5-flash:generateContent?key=' +
 		env.GEMINI_KEY;
 	const response = await fetch(endpoint, {
 		method: 'POST',
@@ -35,15 +32,15 @@ export default async function ask(json, env) {
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({
-			config: {
-				temperature: 0,
-				thinkingConfig: {
-					thinkingBudget: 0,
-				},
-			},
+			// config: {
+			// 	temperature: 0,
+			// 	thinkingConfig: {
+			// 		thinkingBudget: 0,
+			// 	},
+			// },
 			contents: [
 				{
-					role: 'system',
+					role: 'model',
 					parts: [
 						{
 							text: `
@@ -160,7 +157,8 @@ Respond to the following chat:
 				1999,
 			),
 		);
-	} catch {
+	} catch (e) {
+		console.error(e);
 		return UTILS.error('Failed to generate response');
 	}
 }

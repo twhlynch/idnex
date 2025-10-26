@@ -69,7 +69,7 @@ async function handleCommand(request, env, ctx, json) {
 	} else if (command_function in long_commands) {
 		ctx.waitUntil(
 			(async () => {
-				const result = await commands[command_function](json, env);
+				const result = await long_commands[command_function](json, env);
 				const token = json.token;
 				const url = `https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}/messages/@original`;
 

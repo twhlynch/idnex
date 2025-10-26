@@ -9,6 +9,9 @@ export default async function getLeaderboard(json, env) {
 	const leaderboard = await UTILS.get_leaderboard(level_id);
 	if (!leaderboard) return UTILS.error('Error getting leaderboard');
 
+	const level = await UTILS.get_level_details(level_id);
+	if (!level) return UTILS.error('Error getting level');
+
 	const embed = UTILS.leaderboard_embed(leaderboard, level);
 
 	return UTILS.response('', embed);

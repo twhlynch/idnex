@@ -14,5 +14,5 @@ export default async function newestUnbeaten(json, env) {
 			inline: false,
 		},
 	];
-	return UTILS.response('', await UTILS.generate_level_embed(level, fields));
+	return UTILS.response('', await UTILS.level_embed(level, fields));
 }

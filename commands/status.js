@@ -1,3 +1,6 @@
+import CONFIG from '../config.js';
+import UTILS from '../utils.js';
+
 const SERVICES = [
 	{
 		name: 'AWS',
