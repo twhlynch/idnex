@@ -70,14 +70,14 @@ export default async function hardest(json, env) {
 		};
 		return UTILS.response('', embed);
 	} else if (command === 'page') {
-		const page = number - 1;
+		const page = Math.max(number - 1, 0);
 
 		const description = list_data
 			.slice(
 				Math.max(50 * page, 0),
 				Math.min(50 * page + 50, list_data.length),
 			)
-			.map((item, i) => `${i + 1} ${item.title}`)
+			.map((item, i) => `${50 * page + i + 1} ${item.title}`)
 			.join('\n');
 
 		const embed = {
