@@ -260,6 +260,7 @@ function list_stats(levels) {
 		plays: 0,
 		verified_plays: 0,
 		maps: levels.length,
+		time_maps: 0,
 		verified_maps: 0,
 		todays_plays: 0,
 		average_difficulty: 0,
@@ -282,48 +283,41 @@ function list_stats(levels) {
 		if (statistics) {
 			const { total_played, difficulty, liked, time } = statistics;
 
-			stats.plays += total_played;
-			stats.average_difficulty += difficulty;
-			stats.average_likes += liked;
-			stats.average_time += time;
+			stats.plays += total_played || 0;
+			stats.average_difficulty += difficulty || 0;
+			stats.average_likes += liked || 0;
+			if (time) {
+				stats.average_time += time;
+				stats.time_maps += 1;
+			}
 		}
 	});
 
 	stats.average_difficulty /= stats.maps;
 	stats.average_likes /= stats.maps;
-	stats.average_time /= stats.maps;
+	stats.average_time /= stats.time_maps;
 	stats.average_plays = stats.plays / stats.maps;
 	stats.average_complexity = stats.complexity / stats.maps;
 
 	return stats;
 }
 
-function player_stats_embed(player, levels) {
-	const { user_id, user_name, active_customizations, user_level_count } =
-		player;
-
-	const { player_color_primary, player_color_secondary } =
-		active_customizations || {};
-
-	const stats = UTILS.list_stats(levels);
-
+function user_id_timestamp(identifier) {
 	let user_id_int = [...user_id.toString()].reduce(
 		(r, v) => r * BigInt(36) + BigInt(parseInt(v, 36)),
 		0n,
 	);
 	user_id_int >>= BigInt(32);
 	user_id_int >>= BigInt(32);
+
 	const join_date = new Date(Number(user_id_int));
 	const unix_time = Math.floor(join_date.getTime() / 1000);
-	const join_string = `<t:${unix_time}>`;
 
-	const primary = (player_color_primary.color || [0, 0, 0])
-		.map((c) => UTILS.color_component_to_hex(c))
-		.join('');
-	const secondary = (player_color_secondary.color || [0, 0, 0])
-		.map((c) => UTILS.color_component_to_hex(c))
-		.join('');
+	return unix_time;
+}
 
+function player_roles(player) {
+	const { user_id } = player;
 	const roles = [
 		['Creator', player.is_creator],
 		['Verifier', player.is_verifier],
@@ -333,8 +327,25 @@ function player_stats_embed(player, levels) {
 		['Owner', UTILS.is_owner(user_id)],
 	]
 		.filter((e) => e[1])
-		.map((e) => e[0])
-		.join(' | ');
+		.map((e) => e[0]);
+	return roles;
+}
+
+function player_stats_embed(player, levels) {
+	const { user_id, user_name, active_customizations, user_level_count } =
+		player;
+
+	const { player_color_primary } = active_customizations || {};
+
+	const stats = UTILS.list_stats(levels);
+
+	const join_string = `<t:${user_id_timestamp(user_id)}>`;
+
+	const primary = (player_color_primary.color || [0, 0, 0])
+		.map((c) => UTILS.color_component_to_hex(c))
+		.join('');
+
+	const roles = player_roles(player).join(' | ');
 
 	return {
 		type: 'rich',
@@ -377,15 +388,7 @@ function player_info_embed(player, show_cosmetics = false) {
 		active_customizations || {};
 	const items = active_customizations?.items || {};
 
-	let user_id_int = [...user_id.toString()].reduce(
-		(r, v) => r * BigInt(36) + BigInt(parseInt(v, 36)),
-		0n,
-	);
-	user_id_int >>= BigInt(32);
-	user_id_int >>= BigInt(32);
-	const join_date = new Date(Number(user_id_int));
-	const unix_time = Math.floor(join_date.getTime() / 1000);
-	const join_string = `<t:${unix_time}>`;
+	const join_string = `<t:${user_id_timestamp(user_id)}>`;
 
 	let cosmetics = '';
 	if (show_cosmetics) {
@@ -415,17 +418,7 @@ function player_info_embed(player, show_cosmetics = false) {
 		.map((c) => UTILS.color_component_to_hex(c))
 		.join('');
 
-	const roles = [
-		['Creator', player.is_creator],
-		['Verifier', player.is_verifier],
-		['Moderator', player.is_moderator],
-		['Supermod', player.is_supermoderator],
-		['Admin', player.is_admin],
-		['Owner', UTILS.is_owner(user_id)],
-	]
-		.filter((e) => e[1])
-		.map((e) => e[0])
-		.join(' | ');
+	const roles = player_roles(player).join(' | ');
 
 	return {
 		type: 'rich',
