@@ -302,7 +302,7 @@ function list_stats(levels) {
 	return stats;
 }
 
-function user_id_timestamp(identifier) {
+function user_id_timestamp(user_id) {
 	let user_id_int = [...user_id.toString()].reduce(
 		(r, v) => r * BigInt(36) + BigInt(parseInt(v, 36)),
 		0n,
