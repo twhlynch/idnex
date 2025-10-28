@@ -17,12 +17,33 @@ export default async function ask(json, env) {
 	if (messages.length > 10) messages.shift();
 	await env.NAMESPACE.put(KV_KEY, JSON.stringify(messages));
 
+	const models = {
+		'gemini-2.5-flash-lite': 100, // 1000
+		'gemini-2.5-flash': 250,
+		'gemini-2.0-flash-exp': 50,
+		'gemini-2.0-flash-lite': 100, // 200
+		'gemini-2.0-flash': 200,
+		'gemini-2.5-pro': 50,
+	};
+	const model = weighted_random(models);
+
 	const prompt_1 = await build_prompt(messages, { prompt: true }, env);
-	const response_1 = await generate(prompt_1, env);
+	const response_1 = await generate(model, prompt_1, env);
 
 	const options = {};
 	if (response_1)
-		response_1.split(' ').forEach((opt) => (options[opt] = true));
+		response_1.split(' ').forEach((opt) => {
+			const parts = opt.split(':');
+			const key = parts[0];
+
+			if (parts.length > 1) {
+				options[key] = parts[1];
+			} else {
+				options[key] = true;
+			}
+		});
+
+	const debug_string = `-# Debug: ${model}: ${response_1}`;
 
 	const prompt_2 = await build_prompt(
 		messages,
@@ -33,16 +54,30 @@ export default async function ask(json, env) {
 		},
 		env,
 	);
-	const response_2 = await generate(prompt_2, env);
-	if (!response_2) return UTILS.error('Failed to generate response');
+	const response_2 = await generate(model, prompt_2, env);
+	if (!response_2)
+		return UTILS.error('Failed to generate response\n' + debug_string);
 
 	return UTILS.response(
-		response_2.slice(0, 1000) + `\n-# Debug: ${response_1}`,
+		response_2.slice(0, 1700).trim() + '\n' + debug_string,
 	);
 }
 
-async function generate(prompt, env) {
-	const endpoint = `${CONFIG.GEMINI_API}models/gemini-2.5-flash:generateContent?key=${env.GEMINI_KEY}`;
+function weighted_random(models) {
+	const entries = Object.entries(models);
+	const total_weight = entries.reduce(
+		(sum, [key, weight]) => sum + weight,
+		0,
+	);
+	let r = Math.random() * total_weight;
+
+	for (const [model, weight] of entries) {
+		if ((r -= weight) < 0) return model;
+	}
+}
+
+async function generate(model, prompt, env) {
+	const endpoint = `${CONFIG.GEMINI_API}models/${model}:generateContent?key=${env.GEMINI_KEY}`;
 	const response = await fetch(endpoint, {
 		method: 'POST',
 		headers: {
@@ -53,8 +88,10 @@ async function generate(prompt, env) {
 
 	try {
 		const data = await response.json();
+		if (!data?.candidates?.length) console.error(data);
 		return data?.candidates[0]?.content?.parts[0]?.text;
-	} catch {
+	} catch (e) {
+		console.error(e);
 		return null;
 	}
 }
@@ -201,6 +238,26 @@ Hardest maps list moderators:
 		`;
 	}
 
+	if (options.rules) {
+		prompt += `
+<RULES>
+1. **Be respectful** to everyone. Homophobia, Transphobia, Racism, etc will not be tolerated whatsoever.
+2. **Don't spam**, send copypastas, or otherwise be intentionally annoying.
+3. **Use appropriate channels** where possible.
+4. **No NSFW**.
+5. **Slurs will not be tolerated**, including baiting, faking, or similar (swearing is fine though).
+6. **Use common sense** before asking for help.
+7. **No cheating**, or condoning cheating is allowed. You will be banned here, and in GRAB.
+8. **Don't ping Slin** to bypass a timeout in SlinDev.
+9. **No AI videos**.
+10. Intentional misuse of the HELPER role will result in a harsh timeout, whether that is pinging it unnecesarily, or useless or negative responses from helpers.
+11 Do not ask about or discuss modded thumbnails
+
+- STEALING LEVELS IS BANNABLE, GET PERMISSION FROM THE CREATOR
+</RULES>
+		`;
+	}
+
 	if (options.dates) {
 		prompt += `
 <DATES>
@@ -218,6 +275,31 @@ GRAB Tools: created May 12 2023
 idnex: created Oct 29 2023
 </DATES>
 		`;
+	}
+
+	if (options.wiki) {
+		const wiki_response = await fetch(
+			`https://wiki.grab-tools.live/w/api.php?action=query&format=json&generator=search&gsrsearch=${options.wiki}&prop=extracts&exintro=true&explaintext=true&origin=*`,
+			{
+				headers: {
+					'User-Agent':
+						'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+				},
+			},
+		);
+		try {
+			const wiki_results = await wiki_response.json();
+
+			prompt += `
+<WIKI SEARCH (${options.wiki})>
+${Object.values(wiki_results.query.pages)
+	.map((r) => `${r.title}:\n${r.extract}`)
+	.join('\n')}
+</WIKI SEARCH>
+			`;
+		} catch (e) {
+			console.error(e);
+		}
 	}
 
 	if (options.hardest_maps) {
@@ -270,9 +352,13 @@ The options are:
 - players (contains info about well known players)
 - dates (contains important dates)
 - hardest_maps (contains the list of top 100 maps)
+- rules (contains the discord rules)
+
+Aditionally you can make a wiki search if required by including an option in the format (one word only):
+wiki:query
 
 You must respond with ONLY a space separated list of category names, that will be parsed as json keys.
-e.g, links guides faq
+e.g, links guides faq wiki:editor
 
 Message:
 		`;
