@@ -241,17 +241,19 @@ Hardest maps list moderators:
 	if (options.rules) {
 		prompt += `
 <RULES>
-1. **Be respectful** to everyone. Homophobia, Transphobia, Racism, etc will not be tolerated whatsoever.
-2. **Don't spam**, send copypastas, or otherwise be intentionally annoying.
-3. **Use appropriate channels** where possible.
-4. **No NSFW**.
-5. **Slurs will not be tolerated**, including baiting, faking, or similar (swearing is fine though).
-6. **Use common sense** before asking for help.
-7. **No cheating**, or condoning cheating is allowed. You will be banned here, and in GRAB.
-8. **Don't ping Slin** to bypass a timeout in SlinDev.
-9. **No AI videos**.
+remember this community is majority children
+
+1. Be respectful to everyone. Homophobia, Transphobia, Racism, etc will not be tolerated whatsoever.
+2. Don't spam, send copypastas, or otherwise be intentionally annoying.
+3. Use appropriate channels** where possible.
+4. No NSFW.
+5. Slurs will not be tolerated, including baiting, faking, or similar (swearing is fine though).
+6. Use common sense before asking for help.
+7. No cheating, or condoning cheating is allowed. You will be banned here, and in GRAB.
+8. Don't ping Slin to bypass a timeout in SlinDev.
+9. No AI videos.
 10. Intentional misuse of the HELPER role will result in a harsh timeout, whether that is pinging it unnecesarily, or useless or negative responses from helpers.
-11 Do not ask about or discuss modded thumbnails
+11. Do not ask about or discuss modded thumbnails
 
 - STEALING LEVELS IS BANNABLE, GET PERMISSION FROM THE CREATOR
 </RULES>
@@ -275,6 +277,98 @@ GRAB Tools: created May 12 2023
 idnex: created Oct 29 2023
 </DATES>
 		`;
+	}
+
+	if (options.discord_servers) {
+		prompt += `
+<DISCORDS>
+respond in the format [GRAB](https://discord.gg/bFuvJ6sedK)
+
+SlinDev/GRAB: bFuvJ6sedK
+SMORGASBORD: RtdzMucUzS
+GRAB News: w5yNenG7xH
+GRAB Elimination Challenge: 29qYUCJj94
+GRAB League: ymMhybDeuj
+Grab2D: PefVhprQs8
+</DISCORDS>
+		`;
+	}
+
+	if (options.grabby) {
+		prompt += `
+<GRABBY>
+grabby is grabs discord bot.
+
+how to get grabby for your own server:
+https://discord.com/api/oauth2/authorize?client_id=1026832636427108365&permissions=277025392640&scope=bot
+</GRABBY>
+		`;
+	}
+
+	if (options.types) {
+		prompt += `
+<TYPES>
+Special:
+START (id 0) is a starting point of a level
+FINISH (id 1) is the finish of a level
+SIGN (id 2) can display text
+GRAVITY (id 3) players inside it will follow its gravity
+LOBBYTERMINAL (id 4) used in the lobby as the menu
+PARTICLE_EMITTER (id 5) emits particles
+SOUND (id 6) plays sound
+
+Shapes:
+CUBE (id 1000)
+SPHERE (id 1001)
+CYLINDER (id 1002)
+PYRAMID (id 1003)
+PRISM (id 1004)
+CONE (id 1005)
+PYRAMIDSQUARE (id 1006)
+
+Materials:
+DEFAULT (id 0) a grey brick texture
+GRABBABLE (id 1) a yellow rocky texture that can be grabbed
+ICE (id 2) low friction and cant jump on
+LAVA (id 3) kills you on touch
+WOOD (id 4) grabbable
+GRAPPLABLE (id 5) green bushy tecture that can be grappled
+GRAPPLABLE_LAVA (id 6) can be grappled but kills you if you touch it
+GRABBABLE_CRUMBLING (id 7) grabbable but it breaks after being grabbed
+DEFAULT_COLORED (id 8) can be set to any color, neon, and transparent
+BOUNCING (id 9) pink and is bouncy
+SNOW (id 10) like ice but you can jump
+</TYPES>
+		`;
+	}
+
+	if (options.featured) {
+		const level_browser = await UTILS.get_level_browser();
+		try {
+			const best_of_grab = level_browser.sections.find(
+				(section) => section.title === 'Best of GRAB',
+			);
+
+			const readable_sections = (sections, indent = 0) => {
+				return sections.map(
+					(section) =>
+						`${'  '.repeat(indent)}- ${section.title ?? '_'}\n${
+							section.sections
+								? readable_sections(
+										section.sections,
+										indent + 1,
+									)
+								: ''
+						}`,
+				);
+			};
+
+			prompt += `
+<FEATURED>
+${readable_sections([best_of_grab])}
+</FEATURED>
+				`;
+		} catch {}
 	}
 
 	if (options.wiki) {
@@ -353,6 +447,10 @@ The options are:
 - dates (contains important dates)
 - hardest_maps (contains the list of top 100 maps)
 - rules (contains the discord rules)
+- discord_servers (contains grab related discord links)
+- featured (contains the categories in best of grab)
+- grabby (about grabby)
+- types (what shapes and materials are what)
 
 Aditionally you can make a wiki search if required by including an option in the format (one word only):
 wiki:query

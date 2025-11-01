@@ -225,6 +225,11 @@ async function get_leaderboard(identifier) {
 	return await request(url);
 }
 
+async function get_level_browser() {
+	const url = `${CONFIG.API_URL}get_level_browser?version=1`;
+	return await request(url);
+}
+
 function leaderboard_embed(leaderboard, level) {
 	const { title, identifier } = level;
 
@@ -497,6 +502,7 @@ const UTILS = {
 	get_trending_levels,
 	get_unbeaten_levels,
 	get_leaderboard,
+	get_level_browser,
 	// embeds
 	leaderboard_embed,
 	level_embed,
