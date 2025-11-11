@@ -280,7 +280,9 @@ function list_stats(levels) {
 	levels.forEach((level) => {
 		const { change, statistics, complexity, iteration, tags } = level;
 
-		if (tags?.includes('ok')) stats.verified_maps += 1;
+		const is_verfied = tags?.includes('ok');
+
+		if (is_verfied) stats.verified_maps += 1;
 		stats.todays_plays += change;
 		stats.complexity += complexity;
 		stats.iterations += iteration || 1;
@@ -289,6 +291,7 @@ function list_stats(levels) {
 			const { total_played, difficulty, liked, time } = statistics;
 
 			stats.plays += total_played || 0;
+			if (is_verfied) stats.verified_plays += total_played || 0;
 			stats.average_difficulty += difficulty || 0;
 			stats.average_likes += liked || 0;
 			if (time) {
