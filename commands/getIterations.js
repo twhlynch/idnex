@@ -11,10 +11,10 @@ export default async function get_iterations(json, env) {
 	const details = await UTILS.get_level_details(level_id);
 	if (!details) return UTILS.error('Failed to get level details');
 
-	const { iterations } = details.iteration ?? 1;
+	const iterations = details.iteration ?? 1;
 
 	const iteration_list = [];
-	const last_string = `...\n[Iteration 1](<${CONFIG.LEVEL_URL}${level_id}:1>)`;
+	const last_string = `${iterations === 1 ? '' : '...\n'}[Iteration 1](<${CONFIG.LEVEL_URL}${level_id}:1>)`;
 	let end_string = `-# (XXX of XXX iterations shown)`;
 	const max_length = 2000 - last_string.length - 1 - end_string.length - 1;
 
@@ -30,8 +30,9 @@ export default async function get_iterations(json, env) {
 
 	iteration_list.push(last_string);
 
-	end_string.replace('XXX', `${iteration_list.length}`);
-	end_string.replace('XXX', `${iterations}`);
+	end_string = end_string
+		.replace('XXX', `${iteration_list.length}`)
+		.replace('XXX', `${iterations}`);
 	iteration_list.push(end_string);
 
 	const response = iteration_list.join('\n');

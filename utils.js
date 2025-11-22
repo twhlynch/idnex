@@ -341,7 +341,7 @@ function player_roles(player) {
 
 function target_message(json) {
 	const messages = json?.data?.resolved?.messages;
-	if (!messages?.length) return null;
+	if (!messages) return null;
 
 	const target = json?.data?.target_id;
 	if (!target) return null;
