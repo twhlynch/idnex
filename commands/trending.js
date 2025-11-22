@@ -3,7 +3,7 @@ import UTILS from '../utils.js';
 
 export default async function trending(json, env) {
 	const levels = await UTILS.get_trending_levels();
-	if (levels === null) return UTILS.error('Failed getting levels');
+	if (!levels) return UTILS.error('Failed to get levels');
 
 	const description = levels
 		.slice(0, 5)

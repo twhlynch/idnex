@@ -6,20 +6,27 @@ export default async function newest(json, env) {
 
 	if (creator) {
 		const player = await UTILS.get_player(creator);
-		if (player === null) return UTILS.error('Failed to find player');
+		if (!player) return UTILS.error('Failed to get player');
 
 		const { user_name, user_id } = player;
 
 		const levels = await UTILS.get_player_levels(user_id);
-		if (!levels === null)
-			return UTILS.error(`Failed to get levels for ${user_name}`);
+		if (!levels) return UTILS.error(`Failed to get levels`);
 		if (!levels.length) return UTILS.error(`${user_name} has no levels`);
 
-		return UTILS.response(CONFIG.LEVEL_URL + levels[0].identifier);
+		const newest = levels[0];
+
+		const url = UTILS.level_url(newest.identifier);
+		if (!url) return UTILS.error('Failed to get level url');
+
+		return UTILS.response(url);
 	}
 
-	const level = await UTILS.get_level('', creator);
-	if (level === null) return UTILS.error('Failed to get levels');
+	const level = await UTILS.get_level();
+	if (!level) return UTILS.error('Failed to get levels');
 
-	return UTILS.response(CONFIG.LEVEL_URL + level.identifier);
+	const url = UTILS.level_url(level.identifier);
+	if (!url) return UTILS.error('Failed to get level url');
+
+	return UTILS.response(url);
 }

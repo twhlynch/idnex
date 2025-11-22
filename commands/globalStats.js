@@ -1,11 +1,11 @@
 import CONFIG from '../config.js';
 import UTILS from '../utils.js';
 
-export default async function globalStats(json, env) {
+export default async function global_stats(json, env) {
 	const levels = await UTILS.get_all_levels();
-	if (levels === null) return UTILS.error('Failed getting levels');
+	if (!levels) return UTILS.error('Failed to get levels');
 
-	let stats = UTILS.list_stats(levels);
+	const stats = UTILS.list_stats(levels);
 
 	const embed = {
 		type: 'rich',

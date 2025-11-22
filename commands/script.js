@@ -18,6 +18,7 @@ export default async function script(json, env) {
 		return UTILS.error('All parameters are required');
 
 	const data = await UTILS.get_all_levels();
+	if (!data) return UTILS.error('Failed to get levels');
 
 	const filtered = [];
 	for (let level of data) {

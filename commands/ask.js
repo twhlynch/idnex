@@ -5,17 +5,25 @@ const KV_KEY = 'message_log';
 
 export default async function ask(json, env) {
 	let { message } = UTILS.options(json);
+	if (!message) return UTILS.error('`message` is required');
 
-	if (message.length > 300 && json.member.user.id !== CONFIG.ADMIN_USER)
-		return UTILS.error('Request too long');
+	const discord_id = json.member?.user?.id;
+	if (!discord_id) return UTILS.error('Failed to check permission');
+
+	const too_long = message.length > 300;
+	const is_admin = UTILS.is_bot_admin(json);
+	if (too_long && !is_admin) return UTILS.error('Request too long');
 
 	message = (json.member?.user?.global_name || 'user') + ': ' + message;
 
-	let messages = (await env.NAMESPACE.get(KV_KEY)) || '[]';
-	messages = JSON.parse(messages);
+	const messages = await UTILS.kv_get(KV_KEY, env, []);
+	if (!messages) return UTILS.error('Failed to get KV data');
+
 	messages.push(message);
 	if (messages.length > 10) messages.shift();
-	await env.NAMESPACE.put(KV_KEY, JSON.stringify(messages));
+
+	const success = await UTILS.kv_set(KV_KEY, messages, env);
+	if (!success) return UTILS.error('Failed to set KV data');
 
 	const models = {
 		'gemini-2.5-flash-lite': 100, // 1000
@@ -29,6 +37,7 @@ export default async function ask(json, env) {
 
 	const prompt_1 = await build_prompt(messages, { prompt: true }, env);
 	const response_1 = await generate(model, prompt_1, env);
+	if (!response_1) return UTILS.error('Failed to generate response');
 
 	const options = {};
 	if (response_1)

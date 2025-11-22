@@ -172,7 +172,7 @@ async function get_player(query) {
 	return data[0];
 }
 
-async function get_levels(title, creator) {
+async function get_levels(title = null, creator = null) {
 	let url = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}`;
 	url += title ? `&type=search&search_term=${title}` : '&type=newest';
 	return await request(url, (data) => {
@@ -187,7 +187,7 @@ async function get_levels(title, creator) {
 	});
 }
 
-async function get_level(title, creator) {
+async function get_level(title = null, creator = null) {
 	const levels = await UTILS.get_levels(title, creator);
 	if (levels === null || !levels.length) return null;
 
@@ -339,6 +339,19 @@ function player_roles(player) {
 	return roles;
 }
 
+function target_message(json) {
+	const messages = json?.data?.resolved?.messages;
+	if (!messages?.length) return null;
+
+	const target = json?.data?.target_id;
+	if (!target) return null;
+
+	const message = messages[target];
+	if (!message) return null;
+
+	return message;
+}
+
 function player_stats_embed(player, levels) {
 	const { user_id, user_name, active_customizations, user_level_count } =
 		player;
@@ -482,7 +495,61 @@ async function get_featured_name(id) {
 }
 
 function is_owner(id) {
-	return id == '290oi9frh8eihrh1r5z0q'; // Slin
+	return id === '290oi9frh8eihrh1r5z0q'; // Slin
+}
+
+function is_bot_admin(id) {
+	return id === CONFIG.ADMIN_USER;
+}
+
+function json_parse(json) {
+	try {
+		return JSON.parse(json);
+	} catch {
+		return null;
+	}
+}
+
+async function kv_get(key, env, fallback = null) {
+	try {
+		const list = await env.NAMESPACE.get(key);
+		if (fallback && list === '') return fallback;
+
+		if (!list) return null;
+
+		const data = UTILS.json_parse(list);
+		if (!data) return null;
+
+		return data;
+	} catch {
+		return null;
+	}
+}
+
+async function kv_set(key, data, env) {
+	try {
+		const value = JSON.stringify(data);
+		await env.NAMESPACE.put(key, value);
+		return true;
+	} catch {
+		return null;
+	}
+}
+
+function level_url(identifier) {
+	if (!identifier) return null;
+	return CONFIG.LEVEL_URL + identifier;
+}
+
+function image_url(level_details) {
+	const { iteration_image, identifier } = level_details;
+	if (!iteration_image || !identifier) return null;
+
+	const image_id = `level_${identifier.replace(':', '_')}_${iteration_image}`;
+
+	const image_url = `${CONFIG.IMAGES_API_URL}${image_id}.png`;
+
+	return image_url;
 }
 
 const UTILS = {
@@ -518,6 +585,13 @@ const UTILS = {
 	color_component_to_hex,
 	number_with_commas,
 	format_time,
+	json_parse,
+	kv_get,
+	kv_set,
+	is_bot_admin,
+	level_url,
+	target_message,
+	image_url,
 };
 
 export default UTILS;

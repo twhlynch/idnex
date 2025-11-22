@@ -3,7 +3,7 @@ import UTILS from '../utils.js';
 
 export default async function unbeaten(json, env) {
 	const levels = await UTILS.get_unbeaten_levels();
-	if (levels === null) return UTILS.error('Failed getting levels');
+	if (!levels) return UTILS.error('Failed to get levels');
 	if (!levels.length) return UTILS.error('No unbeaten levels');
 
 	const description = levels

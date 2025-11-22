@@ -1,12 +1,13 @@
 import CONFIG from '../config.js';
 import UTILS from '../utils.js';
 
-export default async function newestUnbeaten(json, env) {
+export default async function newest_unbeaten(json, env) {
 	const levels = await UTILS.get_unbeaten_levels();
-	if (levels === null) return UTILS.error('Failed getting levels');
+	if (!levels) return UTILS.error('Failed to get levels');
 	if (!levels.length) return UTILS.error('No unbeaten levels');
 
 	const level = levels[levels.length - 1];
+
 	const fields = [
 		{
 			name: `Days Unbeaten`,
@@ -14,5 +15,8 @@ export default async function newestUnbeaten(json, env) {
 			inline: false,
 		},
 	];
-	return UTILS.response('', await UTILS.level_embed(level, fields));
+
+	const embed = await UTILS.level_embed(level, fields);
+
+	return UTILS.response('', embed);
 }

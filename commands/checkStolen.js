@@ -1,17 +1,17 @@
 import CONFIG from '../config.js';
 import UTILS from '../utils.js';
 
-export default async function checkStolen(json, env) {
+export default async function check_stolen(json, env) {
 	const { id1, id2 } = UTILS.options(json);
-	if (!id1) return UTILS.error('id1 is required');
+	if (!id1) return UTILS.error('`id1` is required');
 
 	const [levels_1, levels_2] = await Promise.all([
 		UTILS.get_player_levels(id1),
 		id2 ? UTILS.get_player_levels(id2) : UTILS.get_all_levels(),
 	]);
 
-	if (levels_1 == null) return UTILS.error('Failed to get levels 1');
-	if (levels_2 == null) return UTILS.error('Failed to get levels 2');
+	if (!levels_1) return UTILS.error('Failed to get levels 1');
+	if (!levels_2) return UTILS.error('Failed to get levels 2');
 
 	const overlaps = levels_1.flatMap((l1) => {
 		const [creator_1, name_1] = l1.identifier.split(':');
