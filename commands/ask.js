@@ -24,6 +24,11 @@ export default async function ask(json, env) {
 	const models = {
 		'gemini-2.5-flash-lite': 20,
 		'gemini-2.5-flash': 20,
+		'gemma-3-12b-it': 20,
+		'gemma-3-1b-it': 20,
+		'gemma-3-27b-it': 20,
+		'gemma-3-2b-it': 20,
+		'gemma-3-4b-it': 20,
 	};
 	const model = weighted_random(models);
 
