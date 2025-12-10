@@ -22,12 +22,8 @@ export default async function ask(json, env) {
 	await insert_message(env, user_name, message); // can fail
 
 	const models = {
-		'gemini-2.5-flash-lite': 100, // 1000
-		'gemini-2.5-flash': 250,
-		'gemini-2.0-flash-exp': 50,
-		'gemini-2.0-flash-lite': 100, // 200
-		'gemini-2.0-flash': 200,
-		'gemini-2.5-pro': 50,
+		'gemini-2.5-flash-lite': 20,
+		'gemini-2.5-flash': 20,
 	};
 	const model = weighted_random(models);
 
