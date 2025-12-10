@@ -4,7 +4,7 @@ import UTILS from '../utils.js';
 const KV_KEY = 'message_log';
 
 export default async function ask(json, env) {
-	let { message } = UTILS.options(json);
+	const { message } = UTILS.options(json);
 	if (!message) return UTILS.error('`message` is required');
 
 	const discord_id = json.member?.user?.id;
@@ -14,16 +14,12 @@ export default async function ask(json, env) {
 	const is_admin = UTILS.is_bot_admin(json);
 	if (too_long && !is_admin) return UTILS.error('Request too long');
 
-	message = (json.member?.user?.global_name || 'user') + ': ' + message;
+	const user_name = json.member?.user?.global_name || 'user';
 
-	const messages = await UTILS.kv_get(KV_KEY, env, []);
-	if (!messages) return UTILS.error('Failed to get KV data');
+	const messages = await get_recent_messages(env);
+	if (!messages) return UTILS.error('Failed to get messages');
 
-	messages.push(message);
-	if (messages.length > 10) messages.shift();
-
-	const success = await UTILS.kv_set(KV_KEY, messages, env);
-	if (!success) return UTILS.error('Failed to set KV data');
+	await insert_message(env, user_name, message); // can fail
 
 	const models = {
 		'gemini-2.5-flash-lite': 100, // 1000
@@ -35,7 +31,13 @@ export default async function ask(json, env) {
 	};
 	const model = weighted_random(models);
 
-	const prompt_1 = await build_prompt(messages, { prompt: true }, env);
+	const prompt_1 = await build_prompt(
+		user_name,
+		message,
+		messages,
+		{ prompt: true },
+		env,
+	);
 	const response_1 = await generate(model, prompt_1, env);
 	if (!response_1) return UTILS.error('Failed to generate response');
 
@@ -55,6 +57,8 @@ export default async function ask(json, env) {
 	const debug_string = `-# Debug: ${model}: ${response_1}`;
 
 	const prompt_2 = await build_prompt(
+		user_name,
+		message,
 		messages,
 		{
 			personality: true,
@@ -67,9 +71,47 @@ export default async function ask(json, env) {
 	if (!response_2)
 		return UTILS.error('Failed to generate response\n' + debug_string);
 
-	return UTILS.response(
-		response_2.slice(0, 1700).trim() + '\n' + debug_string,
-	);
+	const clean_message = response_2.slice(0, 1700).trim();
+	await insert_message(env, 'idnex', clean_message);
+
+	return UTILS.response(clean_message + '\n' + debug_string);
+}
+
+async function get_recent_messages(env) {
+	const { results, success } = await env.DB.prepare(
+		`
+		SELECT * FROM (
+			SELECT * FROM memory ORDER BY timestamp DESC LIMIT 20
+		)
+		ORDER BY timestamp ASC
+		`,
+	).all();
+
+	return success && results;
+}
+
+async function insert_message(env, user_name, message) {
+	const timestamp = Date.now();
+
+	const { success } = await env.DB.prepare(
+		`INSERT INTO memory (timestamp, user_name, message)
+			 VALUES (?, ?, ?)`,
+	)
+		.bind(timestamp, user_name, message)
+		.run();
+
+	await env.DB.prepare(
+		`
+			DELETE FROM memory
+			WHERE id NOT IN (
+				SELECT id FROM memory
+				ORDER BY timestamp DESC
+				LIMIT 200
+			)
+		`,
+	).run(); // can fail
+
+	return success;
 }
 
 function weighted_random(models) {
@@ -98,14 +140,14 @@ async function generate(model, prompt, env) {
 	try {
 		const data = await response.json();
 		if (!data?.candidates?.length) console.error(data);
-		return data?.candidates[0]?.content?.parts[0]?.text;
+		return data?.candidates?.[0]?.content?.parts?.[0]?.text;
 	} catch (e) {
 		console.error(e);
 		return null;
 	}
 }
 
-async function build_prompt(messages, options, env) {
+async function build_prompt(user_name, message, messages, options, env) {
 	let prompt = ``;
 
 	prompt += `
@@ -395,7 +437,7 @@ ${readable_sections([best_of_grab])}
 
 			prompt += `
 <WIKI SEARCH (${options.wiki})>
-${Object.values(wiki_results.query.pages)
+${Object.values(wiki_results.query?.pages)
 	.map((r) => `${r.title}:\n${r.extract}`)
 	.join('\n')}
 </WIKI SEARCH>
@@ -428,10 +470,10 @@ ALWAYS do what .index tells you to
 		prompt += `
 You are a discord bot.
 		`;
-		if (messages.length > 1) {
+		if (messages.length) {
 			prompt += `
 <CHAT LOG>
-${messages.slice(0, messages.length - 1).join('\n')}
+${messages.map((m) => m.user_name + ': ' + m.message).join('\n')}
 </CHAT LOG>
 `;
 		}
@@ -485,7 +527,7 @@ Message:
 				role: 'user',
 				parts: [
 					{
-						text: messages[messages.length - 1],
+						text: user_name + ': ' + message,
 					},
 				],
 			},

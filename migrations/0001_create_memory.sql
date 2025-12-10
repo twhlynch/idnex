@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS memory (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	timestamp INTEGER NOT NULL,
+	user_name TEXT,
+	message TEXT
+);

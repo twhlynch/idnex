@@ -5,3 +5,8 @@ compatibility_flags = [ "nodejs_compat" ]
 kv_namespaces = [
   { binding = "NAMESPACE", id = "a49000e8a3d64ddb992ec1789f11675b" }
 ]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "idnex"
+database_id = "51886d96-63f3-4250-a93e-c75bf74381d1"
