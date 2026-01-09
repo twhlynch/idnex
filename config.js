@@ -6,7 +6,8 @@ const WIKI_URL = 'https://wiki.grab-tools.live';
 const LEVEL_URL = VIEWER_URL + '?level=';
 const PLAYER_URL = WEBSITE_URL + '/levels?tab=tab_other_user&user_id=';
 
-const API_URL = 'https://api.slin.dev/grab/v1/';
+const API_URL = 'https://api.grabvr.tools/';
+const GRAB_API_URL = 'https://api.slin.dev/grab/v1/';
 const IMAGES_API_URL = 'https://grab-images.slin.dev/';
 const STATS_API_URL = STATS_URL + '/stats_data/';
 
@@ -27,6 +28,7 @@ const CONFIG = {
 	PLAYER_URL,
 
 	API_URL,
+	GRAB_API_URL,
 	IMAGES_API_URL,
 	STATS_API_URL,
 

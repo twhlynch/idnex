@@ -52,10 +52,9 @@ export default async function hardest(json, env) {
 	if (modifying && !permission)
 		return UTILS.error("You don't have permission to do that");
 
-	const list = await env.NAMESPACE.get(LIST_KV_KEY);
-	if (!list) return UTILS.error('Error getting list');
-
-	const list_data = JSON.parse(list);
+	const response = await fetch(`${CONFIG.API_URL}get_hardest_levels`);
+	const list_data = await response.json();
+	if (!list_data) return UTILS.error('Error getting list');
 
 	if (command === 'list') {
 		const description = list_data
@@ -88,64 +87,39 @@ export default async function hardest(json, env) {
 		return UTILS.response('', embed);
 	} else if (command === 'add') {
 		const level_id = link.split('level=')[1];
-		const level = await UTILS.get_level_details(level_id);
-		if (level === null) return UTILS.error('Failed to get level details');
-
-		const { title, identifier: id, creators } = level;
-		const creator = creators?.length ? creators[0] : '';
-
-		const item = { title, id, creator };
-
 		if (!number) number = list_data.length + 1;
-		list_data.splice(number - 1, 0, item);
 
-		let change = {
-			...item,
-			description: 'added to position',
-			i: number - 1,
-		};
-		await add_change(change, env);
-		await env.NAMESPACE.put(LIST_KV_KEY, JSON.stringify(list_data));
+		const response = await fetch(
+			`${CONFIG.API_URL}add_hardest_level?level_id=${level_id}&position=${number}&access_token=${env.API_TOKEN}`,
+		);
 
-		return UTILS.response(`Added ${title} to list at position ${number}`);
+		const res = await response.text();
+		return UTILS.response(res);
 	} else if (command === 'remove') {
 		const index = number - 1;
 		const item = list_data[index];
 		if (!item) return UTILS.error('Invalid position');
 
-		const change = {
-			...item,
-			description: 'removed from position',
-			i: index,
-		};
-		await add_change(change, env);
+		const response = await fetch(
+			`${CONFIG.API_URL}remove_hardest_level?level_id=${item.level_id}&access_token=${env.API_TOKEN}`,
+		);
 
-		list_data.splice(index, 1);
-		await env.NAMESPACE.put(LIST_KV_KEY, JSON.stringify(list_data));
-
-		return UTILS.response(`Removed ${item.title} from list`);
+		const res = await response.text();
+		return UTILS.response(res);
 	} else if (command === 'move') {
-		const new_index = number - 1;
-		const level_id = link.split('?level=')[1];
-		const old_index = list_data.findIndex((item) => item.id == level_id);
+		const level_id = link.split('level=')[1];
+		const old_index = list_data.findIndex(
+			(item) => item.level_id == level_id,
+		);
 		if (old_index === -1) return UTILS.error('Could not find level');
 
-		const item = list_data[old_index];
+		if (!number) number = list_data.length + 1;
 
-		list_data.splice(old_index, 1);
-		list_data.splice(new_index, 0, item);
-
-		const change = {
-			...item,
-			description: 'moved to position',
-			i: new_index,
-		};
-		await add_change(change, env);
-
-		await env.NAMESPACE.put(LIST_KV_KEY, JSON.stringify(list_data));
-
-		return UTILS.response(
-			`Moved ${item.title} from ${old_index + 1} to ${number}`,
+		const response = await fetch(
+			`${CONFIG.API_URL}add_hardest_level?level_id=${level_id}&position=${number}&access_token=${env.API_TOKEN}`,
 		);
+
+		const res = await response.text();
+		return UTILS.response(res);
 	}
 }

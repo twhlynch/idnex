@@ -134,7 +134,7 @@ async function request(url, callback = (data) => data) {
 }
 
 async function get_players(query) {
-	const url = `${CONFIG.API_URL}list?type=user_name&search_term=${query}`;
+	const url = `${CONFIG.GRAB_API_URL}list?type=user_name&search_term=${query}`;
 	return await request(url);
 }
 
@@ -173,7 +173,7 @@ async function get_player(query) {
 }
 
 async function get_levels(title = null, creator = null) {
-	let url = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}`;
+	let url = `${CONFIG.GRAB_API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}`;
 	url += title ? `&type=search&search_term=${title}` : '&type=newest';
 	return await request(url, (data) => {
 		if (creator?.length) {
@@ -200,33 +200,33 @@ async function get_all_levels() {
 }
 
 async function get_level_details(identifier) {
-	const url = `${CONFIG.API_URL}details/${identifier.replace(':', '/')}`;
+	const url = `${CONFIG.GRAB_API_URL}details/${identifier.replace(':', '/')}`;
 	return await request(url);
 }
 
 async function get_player_levels(user_id) {
-	const url = `${CONFIG.API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&user_id=${user_id}`;
+	const url = `${CONFIG.GRAB_API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&user_id=${user_id}`;
 	return await request(url);
 }
 
 async function get_player_details(user_id) {
-	const url = `${CONFIG.API_URL}get_user_info?user_id=${user_id}`;
+	const url = `${CONFIG.GRAB_API_URL}get_user_info?user_id=${user_id}`;
 	return await request(url);
 }
 
 async function get_random_level(verified) {
-	let url = CONFIG.API_URL + 'get_random_level';
+	let url = CONFIG.GRAB_API_URL + 'get_random_level';
 	if (verified) url += '?type=ok';
 	return await request(url);
 }
 
 async function get_leaderboard(identifier) {
-	const url = `${CONFIG.API_URL}statistics_top_leaderboard/${identifier.replace(':', '/')}`;
+	const url = `${CONFIG.GRAB_API_URL}statistics_top_leaderboard/${identifier.replace(':', '/')}`;
 	return await request(url);
 }
 
 async function get_level_browser() {
-	const url = `${CONFIG.API_URL}get_level_browser?version=1`;
+	const url = `${CONFIG.GRAB_API_URL}get_level_browser?version=1`;
 	return await request(url);
 }
 
@@ -258,6 +258,55 @@ function leaderboard_embed(leaderboard, level) {
 	};
 
 	return embed;
+}
+
+function aggregate_data(objects) {
+	function valid(obj) {
+		return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+	}
+
+	function build_shape(objs) {
+		const shape = {};
+		for (const obj of objs) {
+			if (!valid(obj)) continue;
+			for (const key of Object.keys(obj)) {
+				const val = obj[key];
+				if (valid(val)) {
+					shape[key] = shape[key] || {};
+					Object.assign(shape[key], build_shape([val]));
+				} else if (typeof val === 'number') {
+					shape[key] = 0; // leaf
+				}
+			}
+		}
+		return shape;
+	}
+
+	function recurse(objs, shape) {
+		if (shape === 0) {
+			const values = objs.filter(Boolean);
+			const count = values.length;
+			const total = values.reduce((a, b) => a + b, 0);
+			const min = count > 0 ? Math.min(...values) : null;
+			const max = count > 0 ? Math.max(...values) : null;
+			return { total, count, min, max };
+		}
+
+		const result = {};
+		for (const key of Object.keys(shape)) {
+			const sub_objs = objs.map((o) =>
+				o && typeof o === 'object' ? o[key] : undefined,
+			);
+			result[key] = recurse(sub_objs, shape[key]);
+		}
+		return result;
+	}
+
+	const shape = build_shape(objects);
+	const result = recurse(objects, shape);
+	result.count = objects.length;
+
+	return result;
 }
 
 function list_stats(levels) {

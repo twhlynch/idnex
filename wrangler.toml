@@ -10,3 +10,8 @@ kv_namespaces = [
 binding = "DB"
 database_name = "idnex"
 database_id = "51886d96-63f3-4250-a93e-c75bf74381d1"
+
+[[d1_databases]]
+binding = "GT_DB"
+database_name = "grab-tools"
+database_id = "f918de74-f833-4feb-b146-cecd010567f2"
