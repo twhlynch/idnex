@@ -23,8 +23,6 @@ import get_thumbnail_cmd from './commands/getThumbnail.js';
 import script_cmd from './commands/script.js';
 import ask_cmd from './commands/ask.js';
 import echo_cmd from './commands/echo.js';
-import block_cmd from './commands/block.js';
-import unblock_cmd from './commands/unblock.js';
 import checkstolen_cmd from './commands/checkStolen.js';
 import status_cmd from './commands/status.js';
 
@@ -50,8 +48,6 @@ const commands = {
 	get_thumbnail_cmd,
 	script_cmd,
 	echo_cmd,
-	block_cmd,
-	unblock_cmd,
 	checkstolen_cmd,
 	status_cmd,
 };

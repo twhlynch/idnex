@@ -610,8 +610,6 @@ const UTILS = {
 	number_with_commas,
 	format_time,
 	json_parse,
-	kv_get,
-	kv_set,
 	is_bot_admin,
 	level_url,
 	target_message,
