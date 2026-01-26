@@ -291,32 +291,6 @@ export const commands = [
 	},
 	// utils
 	{
-		name: 'block',
-		description: 'Block user (index only)',
-		options: [
-			{
-				name: 'id',
-				description: 'user identifier',
-				required: false,
-				...STRING_OPTION,
-			},
-		],
-		...USER_COMMAND,
-	},
-	{
-		name: 'unblock',
-		description: 'Unblock user (index only)',
-		options: [
-			{
-				name: 'id',
-				description: 'user identifier',
-				required: false,
-				...STRING_OPTION,
-			},
-		],
-		...USER_COMMAND,
-	},
-	{
 		name: 'status',
 		description: 'Get relevant server statuses',
 		...USER_COMMAND,
