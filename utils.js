@@ -559,32 +559,6 @@ function json_parse(json) {
 	}
 }
 
-async function kv_get(key, env, fallback = null) {
-	try {
-		const list = await env.NAMESPACE.get(key);
-		if (fallback && list === '') return fallback;
-
-		if (!list) return null;
-
-		const data = UTILS.json_parse(list);
-		if (!data) return null;
-
-		return data;
-	} catch {
-		return null;
-	}
-}
-
-async function kv_set(key, data, env) {
-	try {
-		const value = JSON.stringify(data);
-		await env.NAMESPACE.put(key, value);
-		return true;
-	} catch {
-		return null;
-	}
-}
-
 function level_url(identifier) {
 	if (!identifier) return null;
 	return CONFIG.LEVEL_URL + identifier;

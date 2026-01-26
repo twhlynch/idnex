@@ -1,44 +1,7 @@
 import CONFIG from '../config.js';
 import UTILS from '../utils.js';
 
-const LIST_KV_KEY = 'list';
-const CHANGES_KV_KEY = 'list_changes';
 const ROLE_ID = '1224307852248612986';
-
-async function add_change(change, env) {
-	let changes = await env.NAMESPACE.get(CHANGES_KV_KEY);
-	if (!changes) changes = '[]';
-	let changes_data = JSON.parse(changes);
-
-	let last_change_index = changes_data.findIndex(
-		(item) => item.id == change.id,
-	);
-	if (last_change_index === -1) {
-		changes_data.push(change);
-	} else {
-		const last_change = changes_data[last_change_index];
-
-		if (change.description === 'added to position') {
-			if (last_change.i === change.i) {
-				changes_data.splice(last_change, 1);
-			} else {
-				last_change.description = 'moved to position';
-				last_change.i = change.i;
-			}
-		} else if (change.description === 'moved to position') {
-			last_change.description = 'moved to position';
-			last_change.i = change.i;
-		} else if (change.description === 'removed from position') {
-			if (last_change.i == change.i) {
-				changes_data.splice(last_change, 1);
-			} else {
-				last_change.description = 'removed from position';
-			}
-		}
-	}
-
-	await env.NAMESPACE.put(CHANGES_KV_KEY, JSON.stringify(changes_data));
-}
 
 export default async function hardest(json, env) {
 	let { command, link, number } = UTILS.options(json);

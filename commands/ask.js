@@ -1,8 +1,6 @@
 import CONFIG from '../config.js';
 import UTILS from '../utils.js';
 
-const KV_KEY = 'message_log';
-
 export default async function ask(json, env) {
 	const { message } = UTILS.options(json);
 	if (!message) return UTILS.error('`message` is required');
@@ -449,9 +447,8 @@ ${Object.values(wiki_results.query?.pages)
 	}
 
 	if (options.hardest_maps) {
-		const LIST_KV_KEY = 'list';
-		const list = await env.NAMESPACE.get(LIST_KV_KEY);
-		const list_data = JSON.parse(list);
+		const response = await fetch(`${CONFIG.API_URL}get_hardest_levels`);
+		const list_data = await response.json();
 		prompt += `
 <HARDEST MAPS>
 ${list_data.slice(0, 100).map((map, i) => `${i + 1}: ${map.title} by ${map.creator}\n`)}
