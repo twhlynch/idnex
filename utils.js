@@ -380,6 +380,7 @@ function player_roles(player) {
 		['Verifier', player.is_verifier],
 		['Moderator', player.is_moderator],
 		['Supermod', player.is_supermoderator],
+		['Developer', player.is_developer],
 		['Admin', player.is_admin],
 		['Owner', UTILS.is_owner(user_id)],
 	]
