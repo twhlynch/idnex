@@ -1,18 +1,18 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import { API_URL, LEVEL_URL } from '../config';
+import * as UTILS from '../utils';
 
-export default async function get_hardest(json, env) {
-	let { position, url } = UTILS.options(json);
+export const get_hardest: Command = async (json, _env) => {
+	let { position, url } = UTILS.options<{ position: number; url: string }>(
+		json,
+	);
 	if (!position && !url) return UTILS.error('One variable is required');
 
-	const response = await fetch(`${CONFIG.API_URL}get_hardest_levels`);
-	const list = await response.json();
+	const response = await fetch(`${API_URL}get_hardest_levels`);
+	const list = await response.json<LevelDetails[]>();
 	if (!list) return UTILS.error('Failed to get KV data');
 
-	if (position < 1) position = 1; // done first so its truthy
-
-	if (position) {
-		position = Math.min(list.length - 1, position - 1);
+	if (position !== undefined) {
+		position = Math.min(list.length - 1, position);
 	} else if (url) {
 		const valid_url = url.includes('?level=');
 		if (!valid_url) return UTILS.error('Invalid url');
@@ -21,14 +21,15 @@ export default async function get_hardest(json, env) {
 		position = list.findIndex((level) => level.level_id == id);
 		if (position === -1) return UTILS.error('Level not found');
 	}
+	position = position ?? 0;
 
 	const { title, creators, level_id } = list[position];
 	const embed = {
 		title: `#${position + 1} Hardest Level`,
 		description: `**${title}** by ${creators}`,
-		url: CONFIG.LEVEL_URL + level_id,
+		url: LEVEL_URL + level_id,
 		color: 0xff0000,
 	};
 
 	return UTILS.response('', embed);
-}
+};

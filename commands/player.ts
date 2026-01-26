@@ -1,8 +1,7 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function player(json, env) {
-	const { username } = UTILS.options(json);
+export const player: Command = async (json, _env) => {
+	const { username } = UTILS.options<{ username: string }>(json);
 	if (!username) return UTILS.error('`username` is required');
 
 	const player = await UTILS.get_player(username);
@@ -17,4 +16,4 @@ export default async function player(json, env) {
 	const embed = UTILS.player_stats_embed(player, levels);
 
 	return UTILS.response('', embed);
-}
+};

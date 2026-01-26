@@ -1,7 +1,6 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function trending(json, env) {
+export const trending: Command = async (_json, _env) => {
 	const levels = await UTILS.get_trending_levels();
 	if (!levels) return UTILS.error('Failed to get levels');
 
@@ -20,4 +19,4 @@ export default async function trending(json, env) {
 	};
 
 	return UTILS.response('', embed);
-}
+};

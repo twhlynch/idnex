@@ -1,12 +1,11 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function echo(json, env) {
-	const { message } = UTILS.options(json);
+export const echo: Command = async (json, _env) => {
+	const { message } = UTILS.options<{ message: string }>(json);
 	if (!message) return UTILS.error('`message` is required');
 
 	const allowed = !message.includes('@');
 	if (!allowed) return UTILS.response('Message blocked');
 
 	return UTILS.response(message);
-}
+};

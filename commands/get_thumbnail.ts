@@ -1,7 +1,6 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function get_thumbnail(json, env) {
+export const get_thumbnail: Command = async (json, _env) => {
 	const message = UTILS.target_message(json);
 	if (!message) return UTILS.error('Failed to resolve message');
 
@@ -18,4 +17,4 @@ export default async function get_thumbnail(json, env) {
 	const image_messsage = `[${alt_text}](${image_url})`;
 
 	return UTILS.response(image_messsage);
-}
+};

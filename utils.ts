@@ -1,22 +1,15 @@
-const nacl = require('tweetnacl');
-import { Buffer } from 'node:buffer';
-import CONFIG from './config.js';
+import {
+	ADMIN_USER,
+	FORMAT_VERSION,
+	GRAB_API_URL,
+	IMAGES_API_URL,
+	LEVEL_URL,
+	PLAYER_URL,
+	STATS_API_URL,
+	STATS_URL,
+} from './config';
 
-async function validate(body, request, env) {
-	const signature = request.headers.get('x-signature-ed25519');
-	const timestamp = request.headers.get('x-signature-timestamp');
-	return (
-		signature &&
-		timestamp &&
-		nacl.sign.detached.verify(
-			Buffer.from(timestamp + body),
-			Buffer.from(signature, 'hex'),
-			Buffer.from(env.PUBLIC_KEY, 'hex'),
-		)
-	);
-}
-
-function error(content) {
+export function error(content: string): Response {
 	return Response.json({
 		type: 4,
 		data: {
@@ -29,7 +22,10 @@ function error(content) {
 	});
 }
 
-function response(content, ...embeds) {
+export function response(
+	content: string,
+	...embeds: Discord.Embed[]
+): Response {
 	return Response.json({
 		type: 4,
 		data: {
@@ -41,15 +37,19 @@ function response(content, ...embeds) {
 	});
 }
 
-function options(json) {
-	let opts = {};
+export function options<T extends Record<string, any>>(
+	json: Discord.Data,
+): Partial<T> {
+	let opts = {} as T;
+
 	for (const option of json?.data?.options ?? []) {
-		opts[option.name] = option.value;
+		(opts as any)[option.name] = option.value;
 	}
+
 	return opts;
 }
 
-function extract_level_id(message) {
+export function extract_level_id(message: Discord.Message): string | null {
 	let message_string = message.content;
 	if (message.embeds?.length) {
 		message_string += JSON.stringify(message.embeds);
@@ -58,67 +58,73 @@ function extract_level_id(message) {
 	//            https:// (non-space) ?play=identifier
 	const regex = /https?:\/\/[^\s]+\?level=([a-z0-9:]+)/;
 	const matches = message_string.match(regex);
+	if (!matches?.length) return null;
 	const level_id = matches[1];
 
-	if (!level_id?.length) {
-		return null;
-	}
+	if (!level_id?.length) return null;
 
 	return level_id;
 }
 
-function color_component_to_hex(component) {
+export function color_component_to_hex(component: number): string {
 	const hex = Math.round(component * 255).toString(16);
 	return hex.length == 1 ? '0' + hex : hex;
 }
 
-function number_with_commas(x) {
+export function number_with_commas(x: number): string {
 	let parts = x.toString().split('.');
 	parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 	return parts.join('.');
 }
 
-function timestamp_to_days(timestamp) {
+export function timestamp_to_days(timestamp: number): number {
 	const now = Date.now();
 	return Math.floor((now - timestamp) / 1000 / 60 / 60 / 24);
 }
 
-function format_time(seconds, maxDecimals) {
-	let minutes = Math.floor(seconds / 60);
-	seconds = (seconds % 60).toFixed(maxDecimals);
+export function format_time(
+	seconds: string | number,
+	maxDecimals: number,
+): string {
+	let minutes: string | number = Math.floor(Number(seconds) / 60);
+	seconds = (Number(seconds) % 60).toFixed(maxDecimals);
 	if (minutes < 10) {
 		minutes = '0' + minutes;
 	}
-	if (seconds < 10) {
+	if (Number(seconds) < 10) {
 		seconds = '0' + seconds;
 	}
 	return `${minutes}:${seconds}`;
 }
 
-async function level_embed(level, fields = []) {
+export async function level_embed(
+	level: LevelDetails,
+	fields: Discord.Field[] = [],
+): Promise<Discord.Embed> {
 	return {
 		type: 'rich',
-		title: level.title,
+		title: level.title ?? '',
 		color: 0x618dc3,
 		fields: fields,
 		thumbnail: {
-			url: CONFIG.IMAGES_API_URL + level?.images?.thumb?.key,
+			url: IMAGES_API_URL + level.images?.thumb?.key,
 			height: 288,
 			width: 512,
 		},
 		author: {
 			name:
-				get_featured_name(level.identifier.split(':')[0]) ||
-				level.creators
-					? level.creators[0]
-					: '',
-			url: CONFIG.PLAYER_URL + level.identifier.split(':')[0],
+				(await get_featured_name(level.identifier.split(':')[0])) ||
+				(level.creators ? level.creators?.[0] : ''),
+			url: PLAYER_URL + level.identifier.split(':')[0],
 		},
-		url: CONFIG.STATS_URL + '/stats',
+		url: STATS_URL + '/stats',
 	};
 }
 
-async function request(url, callback = (data) => data) {
+export async function request<T>(
+	url: string,
+	callback = (data: T) => data,
+): Promise<T | null> {
 	const response = await fetch(url);
 	if (!response.ok) return null;
 
@@ -133,13 +139,13 @@ async function request(url, callback = (data) => data) {
 	return null;
 }
 
-async function get_players(query) {
-	const url = `${CONFIG.GRAB_API_URL}list?type=user_name&search_term=${query}`;
+export async function get_players(query: string): Promise<UserInfo[] | null> {
+	const url = `${GRAB_API_URL}list?type=user_name&search_term=${query}`;
 	return await request(url);
 }
 
-async function get_player(query) {
-	const data = await UTILS.get_players(query);
+export async function get_player(query: string): Promise<UserInfo | null> {
+	const data = await get_players(query);
 	if (!data?.length) return null;
 
 	const lower = query.toLowerCase();
@@ -148,7 +154,7 @@ async function get_player(query) {
 	if (exact_match) return exact_match;
 
 	const insensitive_match = data.find(
-		(player) => player.user_name.toLowerCase() === lower,
+		(player) => player.user_name?.toLowerCase() === lower,
 	);
 	if (insensitive_match) return insensitive_match;
 
@@ -172,13 +178,16 @@ async function get_player(query) {
 	return data[0];
 }
 
-async function get_levels(title = null, creator = null) {
-	let url = `${CONFIG.GRAB_API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}`;
+export async function get_levels(
+	title: string | null = null,
+	creator: string | null = null,
+): Promise<LevelDetails[] | null> {
+	let url = `${GRAB_API_URL}list?max_format_version=${FORMAT_VERSION}`;
 	url += title ? `&type=search&search_term=${title}` : '&type=newest';
-	return await request(url, (data) => {
+	return await request<LevelDetails[]>(url, (data) => {
 		if (creator?.length) {
 			return data.filter((level) =>
-				level.creators.find((player) =>
+				level.creators?.find((player) =>
 					player.toLowerCase().includes(creator.toLowerCase()),
 				),
 			);
@@ -187,63 +196,79 @@ async function get_levels(title = null, creator = null) {
 	});
 }
 
-async function get_level(title = null, creator = null) {
-	const levels = await UTILS.get_levels(title, creator);
+export async function get_level(
+	title: string | null = null,
+	creator: string | null = null,
+): Promise<LevelDetails | null> {
+	const levels = await get_levels(title, creator);
 	if (levels === null || !levels.length) return null;
 
 	return levels[0];
 }
 
-async function get_all_levels() {
-	const url = `${CONFIG.STATS_API_URL}all_verified.json`;
+export async function get_all_levels(): Promise<LevelDetails[] | null> {
+	const url = `${STATS_API_URL}all_verified.json`;
 	return await request(url);
 }
 
-async function get_level_details(identifier) {
-	const url = `${CONFIG.GRAB_API_URL}details/${identifier.replace(':', '/')}`;
+export async function get_level_details(
+	identifier: string,
+): Promise<LevelDetails | null> {
+	const url = `${GRAB_API_URL}details/${identifier.replace(':', '/')}`;
 	return await request(url);
 }
 
-async function get_player_levels(user_id) {
-	const url = `${CONFIG.GRAB_API_URL}list?max_format_version=${CONFIG.FORMAT_VERSION}&user_id=${user_id}`;
+export async function get_player_levels(
+	user_id: string,
+): Promise<LevelDetails[] | null> {
+	const url = `${GRAB_API_URL}list?max_format_version=${FORMAT_VERSION}&user_id=${user_id}`;
 	return await request(url);
 }
 
-async function get_player_details(user_id) {
-	const url = `${CONFIG.GRAB_API_URL}get_user_info?user_id=${user_id}`;
+export async function get_player_details(
+	user_id: string,
+): Promise<UserInfo | null> {
+	const url = `${GRAB_API_URL}get_user_info?user_id=${user_id}`;
 	return await request(url);
 }
 
-async function get_random_level(verified) {
-	let url = CONFIG.GRAB_API_URL + 'get_random_level';
+export async function get_random_level(
+	verified: boolean,
+): Promise<LevelDetails | null> {
+	let url = GRAB_API_URL + 'get_random_level';
 	if (verified) url += '?type=ok';
 	return await request(url);
 }
 
-async function get_leaderboard(identifier) {
-	const url = `${CONFIG.GRAB_API_URL}statistics_top_leaderboard/${identifier.replace(':', '/')}`;
+export async function get_leaderboard(
+	identifier: string,
+): Promise<LeaderboardEntry[] | null> {
+	const url = `${GRAB_API_URL}statistics_top_leaderboard/${identifier.replace(':', '/')}`;
 	return await request(url);
 }
 
-async function get_level_browser() {
-	const url = `${CONFIG.GRAB_API_URL}get_level_browser?version=1`;
+export async function get_level_browser(): Promise<LevelBrowser | null> {
+	const url = `${GRAB_API_URL}get_level_browser?version=1`;
 	return await request(url);
 }
 
-function leaderboard_embed(leaderboard, level) {
+export function leaderboard_embed(
+	leaderboard: LeaderboardEntry[],
+	level: LevelDetails,
+): Discord.Embed {
 	const { title, identifier } = level;
 
 	// for 0 padding
 	const maxDecimals = Math.max(
-		leaderboard.map((entry) => {
-			entry.best_time.toString().split('.')[1].length;
-		}),
+		...leaderboard.map(
+			(entry) => entry.best_time.toString().split('.')[1].length,
+		),
 	);
 
 	let description = [];
 	for (let i = 0; i < Math.min(10, leaderboard.length); i++) {
 		const { user_name, best_time } = leaderboard[i];
-		const time = UTILS.format_time(best_time, maxDecimals);
+		const time = format_time(best_time, maxDecimals);
 		const row = `**${i + 1}**. ${user_name} - ${time}`;
 		description.push(row);
 	}
@@ -254,62 +279,13 @@ function leaderboard_embed(leaderboard, level) {
 		description: description.join('\n'),
 		color: 0x618dc3,
 		fields: [],
-		url: CONFIG.LEVEL_URL + identifier,
+		url: LEVEL_URL + identifier,
 	};
 
 	return embed;
 }
 
-function aggregate_data(objects) {
-	function valid(obj) {
-		return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
-	}
-
-	function build_shape(objs) {
-		const shape = {};
-		for (const obj of objs) {
-			if (!valid(obj)) continue;
-			for (const key of Object.keys(obj)) {
-				const val = obj[key];
-				if (valid(val)) {
-					shape[key] = shape[key] || {};
-					Object.assign(shape[key], build_shape([val]));
-				} else if (typeof val === 'number') {
-					shape[key] = 0; // leaf
-				}
-			}
-		}
-		return shape;
-	}
-
-	function recurse(objs, shape) {
-		if (shape === 0) {
-			const values = objs.filter(Boolean);
-			const count = values.length;
-			const total = values.reduce((a, b) => a + b, 0);
-			const min = count > 0 ? Math.min(...values) : null;
-			const max = count > 0 ? Math.max(...values) : null;
-			return { total, count, min, max };
-		}
-
-		const result = {};
-		for (const key of Object.keys(shape)) {
-			const sub_objs = objs.map((o) =>
-				o && typeof o === 'object' ? o[key] : undefined,
-			);
-			result[key] = recurse(sub_objs, shape[key]);
-		}
-		return result;
-	}
-
-	const shape = build_shape(objects);
-	const result = recurse(objects, shape);
-	result.count = objects.length;
-
-	return result;
-}
-
-function list_stats(levels) {
+export function list_stats(levels: LevelDetails[]) {
 	let stats = {
 		plays: 0,
 		verified_plays: 0,
@@ -332,7 +308,7 @@ function list_stats(levels) {
 		const is_verfied = tags?.includes('ok');
 
 		if (is_verfied) stats.verified_maps += 1;
-		stats.todays_plays += change;
+		stats.todays_plays += change ?? 0;
 		stats.complexity += complexity;
 		stats.iterations += iteration || 1;
 
@@ -359,7 +335,7 @@ function list_stats(levels) {
 	return stats;
 }
 
-function user_id_timestamp(user_id) {
+export function user_id_timestamp(user_id: string): number {
 	let user_id_int = [...user_id.toString()].reduce(
 		(r, v) => r * BigInt(36) + BigInt(parseInt(v, 36)),
 		0n,
@@ -373,23 +349,22 @@ function user_id_timestamp(user_id) {
 	return unix_time;
 }
 
-function player_roles(player) {
-	const { user_id } = player;
-	const roles = [
-		['Creator', player.is_creator],
-		['Verifier', player.is_verifier],
-		['Moderator', player.is_moderator],
-		['Supermod', player.is_supermoderator],
-		['Developer', player.is_developer],
-		['Admin', player.is_admin],
-		['Owner', UTILS.is_owner(user_id)],
-	]
+export function player_roles(player: UserInfo): string[] {
+	const role_map = {
+		Creator: player.is_creator,
+		Verifier: player.is_verifier,
+		Moderator: player.is_moderator,
+		Supermod: player.is_supermoderator,
+		Developer: player.is_developer,
+		Admin: player.is_admin,
+	};
+	const roles = Object.entries(role_map)
 		.filter((e) => e[1])
 		.map((e) => e[0]);
 	return roles;
 }
 
-function target_message(json) {
+export function target_message(json: Discord.Data): Discord.Message | null {
 	const messages = json?.data?.resolved?.messages;
 	if (!messages) return null;
 
@@ -402,33 +377,36 @@ function target_message(json) {
 	return message;
 }
 
-function player_stats_embed(player, levels) {
+export function player_stats_embed(
+	player: UserInfo,
+	levels: LevelDetails[],
+): Discord.Embed {
 	const { user_id, user_name, active_customizations, user_level_count } =
 		player;
 
 	const { player_color_primary } = active_customizations || {};
 
-	const stats = UTILS.list_stats(levels);
+	const stats = list_stats(levels);
 
 	const join_string = `<t:${user_id_timestamp(user_id)}>`;
 
 	const primary = (player_color_primary.color || [0, 0, 0])
-		.map((c) => UTILS.color_component_to_hex(c))
+		.map((c) => color_component_to_hex(c))
 		.join('');
 
 	const roles = player_roles(player).join(' | ');
 
 	return {
 		type: 'rich',
-		title: user_name,
+		title: user_name ?? '',
 		description:
 			`**Levels:** ${user_level_count}\n` +
-			`**Verified maps:** ${UTILS.number_with_commas(stats.verified_maps)}\n` +
-			`**Total plays:** ${UTILS.number_with_commas(stats.plays)}\n` +
-			`**Verified plays:** ${UTILS.number_with_commas(stats.verified_plays)}\n` +
-			`**Total complexity:** ${UTILS.number_with_commas(stats.complexity)}\n` +
+			`**Verified maps:** ${number_with_commas(stats.verified_maps)}\n` +
+			`**Total plays:** ${number_with_commas(stats.plays)}\n` +
+			`**Verified plays:** ${number_with_commas(stats.verified_plays)}\n` +
+			`**Total complexity:** ${number_with_commas(stats.complexity)}\n` +
 			`**Average difficulty:** ${Math.round(stats.average_difficulty * 100)}%\n` +
-			`**Average plays:** ${UTILS.number_with_commas(Math.round(stats.average_plays * 100) / 100)}\n` +
+			`**Average plays:** ${number_with_commas(Math.round(stats.average_plays * 100) / 100)}\n` +
 			`**Average likes:** ${Math.round(stats.average_likes * 100)}%\n` +
 			`**Average time:** ${Math.round(stats.average_time * 100) / 100}s`,
 		color: parseInt(primary, 16),
@@ -444,14 +422,17 @@ function player_stats_embed(player, levels) {
 				inline: false,
 			},
 		],
-		url: CONFIG.PLAYER_URL + user_id,
+		url: PLAYER_URL + user_id,
 		footer: {
 			text: roles,
 		},
 	};
 }
 
-function player_info_embed(player, show_cosmetics = false) {
+export function player_info_embed(
+	player: UserInfo,
+	show_cosmetics = false,
+): Discord.Embed {
 	const { user_id, user_name, active_customizations, user_level_count } =
 		player;
 
@@ -483,17 +464,17 @@ function player_info_embed(player, show_cosmetics = false) {
 	}
 
 	const primary = (player_color_primary.color || [0, 0, 0])
-		.map((c) => UTILS.color_component_to_hex(c))
+		.map((c) => color_component_to_hex(c))
 		.join('');
 	const secondary = (player_color_secondary.color || [0, 0, 0])
-		.map((c) => UTILS.color_component_to_hex(c))
+		.map((c) => color_component_to_hex(c))
 		.join('');
 
 	const roles = player_roles(player).join(' | ');
 
 	return {
 		type: 'rich',
-		title: user_name,
+		title: user_name ?? '',
 		description:
 			`**Levels:** ${user_level_count}\n` +
 			`**Primary:** #${primary}\n` +
@@ -512,30 +493,30 @@ function player_info_embed(player, show_cosmetics = false) {
 				inline: false,
 			},
 		],
-		url: CONFIG.PLAYER_URL + user_id,
+		url: PLAYER_URL + user_id,
 		footer: {
 			text: roles,
 		},
 	};
 }
 
-async function get_trending_levels() {
-	const url = `${CONFIG.STATS_API_URL}all_verified.json`;
-	return await request(url, (data) =>
-		data.sort((a, b) => b.change - a.change).slice(0, 200),
+export async function get_trending_levels(): Promise<LevelDetails[] | null> {
+	const url = `${STATS_API_URL}all_verified.json`;
+	return await request<LevelDetails[]>(url, (data) =>
+		data.sort((a, b) => (b.change ?? 0) - (a.change ?? 0)).slice(0, 200),
 	);
 }
 
-async function get_unbeaten_levels() {
-	const url = `${CONFIG.STATS_API_URL}unbeaten_levels.json`;
-	return await request(url);
+export async function get_unbeaten_levels(): Promise<LevelDetails[] | null> {
+	const url = `${STATS_API_URL}unbeaten_levels.json`;
+	return await request<LevelDetails[]>(url);
 }
 
-async function get_featured_name(id) {
-	const response = await fetch(
-		CONFIG.STATS_API_URL + 'featured_creators.json',
-	);
-	const data = await response.json();
+export async function get_featured_name(
+	id: string,
+): Promise<string | undefined> {
+	const response = await fetch(STATS_API_URL + 'featured_creators.json');
+	const data = await response.json<{ list_key: string; title: string }[]>();
 	for (let featured_creator of data || []) {
 		if (featured_creator.list_key.split(':')[1] == id) {
 			return featured_creator.title;
@@ -544,15 +525,11 @@ async function get_featured_name(id) {
 	return undefined;
 }
 
-function is_owner(id) {
-	return id === '290oi9frh8eihrh1r5z0q'; // Slin
+export function is_bot_admin(id: string): boolean {
+	return id === ADMIN_USER;
 }
 
-function is_bot_admin(id) {
-	return id === CONFIG.ADMIN_USER;
-}
-
-function json_parse(json) {
+export function json_parse(json: string): object | null {
 	try {
 		return JSON.parse(json);
 	} catch {
@@ -560,60 +537,18 @@ function json_parse(json) {
 	}
 }
 
-function level_url(identifier) {
+export function level_url(identifier: string): string | null {
 	if (!identifier) return null;
-	return CONFIG.LEVEL_URL + identifier;
+	return LEVEL_URL + identifier;
 }
 
-function image_url(level_details) {
+export function image_url(level_details: LevelDetails): string | null {
 	const { iteration_image, identifier } = level_details;
 	if (!iteration_image || !identifier) return null;
 
 	const image_id = `level_${identifier.replace(':', '_')}_${iteration_image}`;
 
-	const image_url = `${CONFIG.IMAGES_API_URL}${image_id}.png`;
+	const image_url = `${IMAGES_API_URL}${image_id}.png`;
 
 	return image_url;
 }
-
-const UTILS = {
-	// discord
-	response,
-	error,
-	validate,
-	options,
-	extract_level_id,
-	// requests
-	get_player,
-	get_players,
-	get_player_details,
-	get_level,
-	get_levels,
-	get_level_details,
-	get_all_levels,
-	get_player_levels,
-	get_random_level,
-	get_trending_levels,
-	get_unbeaten_levels,
-	get_leaderboard,
-	get_level_browser,
-	// embeds
-	leaderboard_embed,
-	level_embed,
-	player_info_embed,
-	player_stats_embed,
-	// util
-	list_stats,
-	timestamp_to_days,
-	is_owner,
-	color_component_to_hex,
-	number_with_commas,
-	format_time,
-	json_parse,
-	is_bot_admin,
-	level_url,
-	target_message,
-	image_url,
-};
-
-export default UTILS;

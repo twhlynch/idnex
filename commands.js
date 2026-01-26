@@ -1,19 +1,9 @@
-const USER_COMMAND = {
-	integration_types: [0, 1],
-	contexts: [0, 1, 2],
-};
-const MESSAGE_ACTION = {
-	type: 3,
-};
+const USER_COMMAND = { integration_types: [0, 1], contexts: [0, 1, 2] };
+const MESSAGE_ACTION = { type: 3 };
 const STRING_OPTION = { type: 3 };
 const NUMBER_OPTION = { type: 4 };
 const BOOL_OPTION = { type: 5 };
-const CHOICE = (value) => {
-	return {
-		name: value,
-		value: value,
-	};
-};
+const CHOICE = (value) => ({ name: value, value: value });
 
 export const commands = [
 	// levels

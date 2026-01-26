@@ -1,7 +1,6 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function newest(json, env) {
+export const newest: Command = async (json, _env) => {
 	const { creator } = UTILS.options(json);
 
 	if (creator) {
@@ -14,21 +13,19 @@ export default async function newest(json, env) {
 		if (!levels) return UTILS.error(`Failed to get levels`);
 		if (!levels.length) return UTILS.error(`${user_name} has no levels`);
 
-		const oldest = levels[levels.length - 1];
+		const newest = levels[0];
 
-		const url = UTILS.level_url(oldest.identifier);
+		const url = UTILS.level_url(newest.identifier);
 		if (!url) return UTILS.error('Failed to get level url');
 
 		return UTILS.response(url);
 	}
 
-	const levels = await UTILS.get_levels();
-	if (!levels?.length) return UTILS.error('Failed to get levels');
+	const level = await UTILS.get_level();
+	if (!level) return UTILS.error('Failed to get levels');
 
-	const oldest = levels[levels.length - 1];
-
-	const url = UTILS.level_url(oldest.identifier);
+	const url = UTILS.level_url(level.identifier);
 	if (!url) return UTILS.error('Failed to get level url');
 
 	return UTILS.response(url);
-}
+};

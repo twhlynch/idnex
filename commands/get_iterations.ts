@@ -1,7 +1,7 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import { LEVEL_URL } from '../config';
+import * as UTILS from '../utils';
 
-export default async function get_iterations(json, env) {
+export const get_iterations: Command = async (json, _env) => {
 	const message = UTILS.target_message(json);
 	if (!message) return UTILS.error('Failed to resolve message');
 
@@ -14,12 +14,12 @@ export default async function get_iterations(json, env) {
 	const iterations = details.iteration ?? 1;
 
 	const iteration_list = [];
-	const last_string = `${iterations === 1 ? '' : '...\n'}[Iteration 1](<${CONFIG.LEVEL_URL}${level_id}:1>)`;
+	const last_string = `${iterations === 1 ? '' : '...\n'}[Iteration 1](<${LEVEL_URL}${level_id}:1>)`;
 	let end_string = `-# (XXX of XXX iterations shown)`;
 	const max_length = 2000 - last_string.length - 1 - end_string.length - 1;
 
 	for (let i = iterations; i > 1; i--) {
-		let str = `[Iteration ${i}](<${CONFIG.LEVEL_URL}${level_id}:${i}>)`;
+		let str = `[Iteration ${i}](<${LEVEL_URL}${level_id}:${i}>)`;
 		if (i === iterations) str += ' (current)';
 
 		const length = iteration_list.join('\n').length + str.length;
@@ -38,4 +38,4 @@ export default async function get_iterations(json, env) {
 	const response = iteration_list.join('\n');
 
 	return UTILS.response(response);
-}
+};

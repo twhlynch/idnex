@@ -1,8 +1,8 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import { LEVEL_URL } from '../config';
+import * as UTILS from '../utils';
 
-export default async function check_stolen(json, env) {
-	const { id1, id2 } = UTILS.options(json);
+export const check_stolen: Command = async (json, _env) => {
+	const { id1, id2 } = UTILS.options<{ id1: string; id2: string }>(json);
 	if (!id1) return UTILS.error('`id1` is required');
 
 	const [levels_1, levels_2] = await Promise.all([
@@ -33,11 +33,11 @@ export default async function check_stolen(json, env) {
 		fields: overlaps
 			.map(([a, b]) => ({
 				name: '',
-				value: `${CONFIG.LEVEL_URL}${a}\n${CONFIG.LEVEL_URL}${b}`,
+				value: `${LEVEL_URL}${a}\n${LEVEL_URL}${b}`,
 				inline: false,
 			}))
 			.slice(0, 10),
 	};
 
 	return UTILS.response('', embed);
-}
+};

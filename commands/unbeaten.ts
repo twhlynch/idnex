@@ -1,18 +1,18 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function unbeaten(json, env) {
+export const unbeaten: Command = async (_json, _env) => {
 	const levels = await UTILS.get_unbeaten_levels();
 	if (!levels) return UTILS.error('Failed to get levels');
 	if (!levels.length) return UTILS.error('No unbeaten levels');
 
 	const description = levels
 		.filter(
-			(level) => UTILS.timestamp_to_days(level.update_timestamp) >= 100,
+			(level) =>
+				UTILS.timestamp_to_days(level.update_timestamp ?? 0) >= 100,
 		)
 		.map((level) => {
 			const { title, update_timestamp } = level;
-			const days = UTILS.timestamp_to_days(update_timestamp);
+			const days = UTILS.timestamp_to_days(update_timestamp ?? 0);
 			return `**${Math.floor(days)}d** ${title}`;
 		})
 		.join('\n');
@@ -24,4 +24,4 @@ export default async function unbeaten(json, env) {
 	};
 
 	return UTILS.response('', embed);
-}
+};

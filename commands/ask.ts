@@ -1,7 +1,7 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import { API_URL, GEMINI_API } from '../config';
+import * as UTILS from '../utils';
 
-export default async function ask(json, env) {
+export const ask: Command = async (json, env) => {
 	const { message } = UTILS.options(json);
 	if (!message) return UTILS.error('`message` is required');
 
@@ -9,7 +9,7 @@ export default async function ask(json, env) {
 	if (!discord_id) return UTILS.error('Failed to check permission');
 
 	const too_long = message.length > 300;
-	const is_admin = UTILS.is_bot_admin(json);
+	const is_admin = UTILS.is_bot_admin(json.member?.user?.id);
 	if (too_long && !is_admin) return UTILS.error('Request too long');
 
 	const user_name = json.member?.user?.global_name || 'user';
@@ -40,7 +40,7 @@ export default async function ask(json, env) {
 	const response_1 = await generate(model, prompt_1, env);
 	if (!response_1) return UTILS.error('Failed to generate response');
 
-	const options = {};
+	const options: Record<string, boolean | string> = {};
 	if (response_1)
 		response_1.split(' ').forEach((opt) => {
 			const parts = opt.split(':');
@@ -74,9 +74,9 @@ export default async function ask(json, env) {
 	await insert_message(env, 'idnex', clean_message);
 
 	return UTILS.response(clean_message + '\n' + debug_string);
-}
+};
 
-async function get_recent_messages(env) {
+async function get_recent_messages(env: Ctx) {
 	const { results, success } = await env.DB.prepare(
 		`
 		SELECT * FROM (
@@ -89,7 +89,7 @@ async function get_recent_messages(env) {
 	return success && results;
 }
 
-async function insert_message(env, user_name, message) {
+async function insert_message(env: Ctx, user_name: string, message: string) {
 	const timestamp = Date.now();
 
 	const { success } = await env.DB.prepare(
@@ -113,10 +113,10 @@ async function insert_message(env, user_name, message) {
 	return success;
 }
 
-function weighted_random(models) {
+function weighted_random(models: Record<string, number>): string {
 	const entries = Object.entries(models);
 	const total_weight = entries.reduce(
-		(sum, [key, weight]) => sum + weight,
+		(sum, [_key, weight]) => sum + weight,
 		0,
 	);
 	let r = Math.random() * total_weight;
@@ -124,10 +124,15 @@ function weighted_random(models) {
 	for (const [model, weight] of entries) {
 		if ((r -= weight) < 0) return model;
 	}
+	return entries[0][0];
 }
 
-async function generate(model, prompt, env) {
-	const endpoint = `${CONFIG.GEMINI_API}models/${model}:generateContent?key=${env.GEMINI_KEY}`;
+async function generate(
+	model: string,
+	prompt: object,
+	env: Ctx,
+): Promise<string | null> {
+	const endpoint = `${GEMINI_API}models/${model}:generateContent?key=${env.GEMINI_KEY}`;
 	const response = await fetch(endpoint, {
 		method: 'POST',
 		headers: {
@@ -137,7 +142,9 @@ async function generate(model, prompt, env) {
 	});
 
 	try {
-		const data = await response.json();
+		const data = await response.json<{
+			candidates: { content: { parts: { text: string }[] } }[];
+		}>();
 		if (!data?.candidates?.length) console.error(data);
 		return data?.candidates?.[0]?.content?.parts?.[0]?.text;
 	} catch (e) {
@@ -146,7 +153,30 @@ async function generate(model, prompt, env) {
 	}
 }
 
-async function build_prompt(user_name, message, messages, options, env) {
+async function build_prompt(
+	user_name: string,
+	message: string,
+	messages: any[],
+	options: {
+		prompt?: any;
+		personality?: any;
+		response?: any;
+		json_editor?: any;
+		faq?: any;
+		guides?: any;
+		links?: any;
+		players?: any;
+		rules?: any;
+		dates?: any;
+		discord_servers?: any;
+		grabby?: any;
+		types?: any;
+		featured?: any;
+		wiki?: any;
+		hardest_maps?: any;
+	},
+	_env: Ctx,
+): Promise<{ contents: { role: string; parts: { text: string }[] }[] }> {
 	let prompt = ``;
 
 	prompt += `
@@ -394,31 +424,37 @@ SNOW (id 10) like ice but you can jump
 
 	if (options.featured) {
 		const level_browser = await UTILS.get_level_browser();
-		try {
-			const best_of_grab = level_browser.sections.find(
-				(section) => section.title === 'Best of GRAB',
-			);
-
-			const readable_sections = (sections, indent = 0) => {
-				return sections.map(
-					(section) =>
-						`${'  '.repeat(indent)}- ${section.title ?? '_'}\n${
-							section.sections
-								? readable_sections(
-										section.sections,
-										indent + 1,
-									)
-								: ''
-						}`,
+		if (level_browser) {
+			try {
+				const best_of_grab = level_browser.sections.find(
+					(section) => section.title === 'Best of GRAB',
 				);
-			};
+				if (best_of_grab) {
+					const readable_sections = (
+						sections: Section[],
+						indent = 0,
+					): string[] => {
+						return sections.map(
+							(section) =>
+								`${'  '.repeat(indent)}- ${section.title ?? '_'}\n${
+									section.sections
+										? readable_sections(
+												section.sections,
+												indent + 1,
+											)
+										: ''
+								}`,
+						);
+					};
 
-			prompt += `
+					prompt += `
 <FEATURED>
 ${readable_sections([best_of_grab])}
 </FEATURED>
 				`;
-		} catch {}
+				}
+			} catch {}
+		}
 	}
 
 	if (options.wiki) {
@@ -432,7 +468,11 @@ ${readable_sections([best_of_grab])}
 			},
 		);
 		try {
-			const wiki_results = await wiki_response.json();
+			const wiki_results = await wiki_response.json<{
+				query: {
+					pages: Record<string, { title: string; extract: string }>;
+				};
+			}>();
 
 			prompt += `
 <WIKI SEARCH (${options.wiki})>
@@ -447,8 +487,8 @@ ${Object.values(wiki_results.query?.pages)
 	}
 
 	if (options.hardest_maps) {
-		const response = await fetch(`${CONFIG.API_URL}get_hardest_levels`);
-		const list_data = await response.json();
+		const response = await fetch(`${API_URL}get_hardest_levels`);
+		const list_data = await response.json<LevelDetails[]>();
 		prompt += `
 <HARDEST MAPS>
 ${list_data.slice(0, 100).map((map, i) => `${i + 1}: ${map.title} by ${map.creator}\n`)}

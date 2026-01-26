@@ -1,6 +1,7 @@
 {
 	"type": "module",
 	"dependencies": {
+		"@types/node": "^25.0.10",
 		"node-fetch": "^2.6.1",
 		"tweetnacl": "^1.0.3",
 		"wrangler": "^4.45.0"

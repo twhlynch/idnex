@@ -1,7 +1,7 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import { STATS_URL } from '../config';
+import * as UTILS from '../utils';
 
-export default async function global_stats(json, env) {
+export const global_stats: Command = async (_json, _env) => {
 	const levels = await UTILS.get_all_levels();
 	if (!levels) return UTILS.error('Failed to get levels');
 
@@ -23,8 +23,8 @@ export default async function global_stats(json, env) {
 			`**Average complexity:** ${UTILS.number_with_commas(Math.round(stats.average_complexity * 100) / 100)}`,
 		color: 0x618dc3,
 		fields: [],
-		url: CONFIG.STATS_URL + '/stats?tab=Global',
+		url: STATS_URL + '/stats?tab=Global',
 	};
 
 	return UTILS.response('', embed);
-}
+};

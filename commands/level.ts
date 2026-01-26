@@ -1,8 +1,10 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function level(json, env) {
-	const { title, creator } = UTILS.options(json);
+export const level: Command = async (json, _env) => {
+	const { title, creator } = UTILS.options<{
+		title: string;
+		creator: string;
+	}>(json);
 	if (!title) return UTILS.error('`title` is required');
 
 	const level = await UTILS.get_level(title, creator);
@@ -12,4 +14,4 @@ export default async function level(json, env) {
 	if (!url) return UTILS.error('Failed to get level url');
 
 	return UTILS.response(url);
-}
+};

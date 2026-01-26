@@ -1,7 +1,6 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function get_complexity(json, env) {
+export const get_complexity: Command = async (json, _env) => {
 	const message = UTILS.target_message(json);
 	if (!message) return UTILS.error('Failed to resolve message');
 
@@ -12,4 +11,4 @@ export default async function get_complexity(json, env) {
 	if (!level) return UTILS.error('Failed to get level details');
 
 	return UTILS.response(`${level.complexity}`);
-}
+};

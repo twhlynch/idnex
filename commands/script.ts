@@ -1,19 +1,12 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import { LEVEL_URL, PLAYER_URL } from '../config';
+import * as UTILS from '../utils';
 
-function resolve_path(object, path) {
-	const keys = path.trim().replace('level.', '').split('.');
-	for (const key of keys) {
-		object = object[key];
-		if (object === undefined) {
-			return undefined;
-		}
-	}
-	return object;
-}
-
-export default async function script(json, env) {
-	const { filter, limit, return: ret } = UTILS.options(json);
+export const script: Command = async (json, _env) => {
+	const {
+		filter,
+		limit,
+		return: ret,
+	} = UTILS.options<{ filter: string; limit: string; return: string }>(json);
 	if (!filter?.length || !limit?.length || !ret?.length)
 		return UTILS.error('All parameters are required');
 
@@ -27,7 +20,7 @@ export default async function script(json, env) {
 			const parts = segment.split(' ').map((s) => s.trim());
 
 			let operator = parts[1];
-			let compare = parts[2];
+			let compare: string | number = parts[2];
 
 			for (let i = 3; i < parts.length; i++) {
 				compare += ' ' + parts[i];
@@ -89,12 +82,14 @@ export default async function script(json, env) {
 					}
 					break;
 				case 'in':
-					if (!(compare?.includes && compare.includes(prop))) {
+					if (
+						!(typeof compare === 'string' && compare.includes(prop))
+					) {
 						return true;
 					}
 					break;
 				case '!in':
-					if (compare?.includes && compare.includes(prop)) {
+					if (typeof compare === 'string' && compare.includes(prop)) {
 						return true;
 					}
 					break;
@@ -117,14 +112,14 @@ export default async function script(json, env) {
 
 		if (valid) {
 			filtered.push(level);
-			if (filtered.length >= limit) break;
+			if (filtered.length >= parseInt(limit)) break;
 		}
 	}
 
 	filtered.forEach((level) => {
-		level.link = CONFIG.LEVEL_URL + level.identifier;
+		level.link = LEVEL_URL + level.identifier;
 		level.creator = level.creators?.length ? level.creators[0] : '';
-		level.creator_link = CONFIG.PLAYER_URL + level.identifier.split(':')[0];
+		level.creator_link = PLAYER_URL + level.identifier.split(':')[0];
 		level.creation_timestamp = level.creation_timestamp ?? 0;
 		level.update_timestamp =
 			level.update_timestamp ?? level.creation_timestamp;
@@ -145,4 +140,15 @@ export default async function script(json, env) {
 		.join('\n');
 
 	return UTILS.response('```\n' + result + '\n```');
+};
+
+function resolve_path(object: any, path: string) {
+	const keys = path.trim().replace('level.', '').split('.');
+	for (const key of keys) {
+		object = object[key];
+		if (object === undefined) {
+			return undefined;
+		}
+	}
+	return object;
 }

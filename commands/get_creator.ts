@@ -1,7 +1,6 @@
-import CONFIG from '../config.js';
-import UTILS from '../utils.js';
+import * as UTILS from '../utils';
 
-export default async function get_creator(json, env) {
+export const get_creator: Command = async (json, _env) => {
 	const message = UTILS.target_message(json);
 	if (!message) return UTILS.error('Failed to resolve message');
 
@@ -16,4 +15,4 @@ export default async function get_creator(json, env) {
 	const embed = UTILS.player_info_embed(details);
 
 	return UTILS.response('', embed);
-}
+};
