@@ -12,7 +12,7 @@ export const get_hardest: Command = async (json, _env) => {
 	if (!list) return UTILS.error('Failed to get KV data');
 
 	if (position !== undefined) {
-		position = Math.min(list.length - 1, position);
+		position = Math.min(Math.max(0, position - 1), list.length - 1);
 	} else if (url) {
 		const valid_url = url.includes('?level=');
 		if (!valid_url) return UTILS.error('Invalid url');
