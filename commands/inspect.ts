@@ -10,7 +10,7 @@ export const inspect: Command = async (json, _env) => {
 	const { name, user } = message.interaction_metadata;
 	const { global_name, username, id } = user;
 
-	const info = `${name} used by <@${id}> / ${global_name} (${username})`;
+	const info = `${name ?? 'Command'} triggered by <@${id}> / ${global_name} (${username})`;
 
 	return UTILS.response(info);
 };
