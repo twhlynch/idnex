@@ -298,4 +298,9 @@ export const commands = [
 		],
 		...USER_COMMAND,
 	},
+	{
+		name: 'Inspect',
+		...MESSAGE_ACTION,
+		...USER_COMMAND,
+	},
 ];

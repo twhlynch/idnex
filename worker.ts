@@ -22,6 +22,7 @@ import { ask as ask_cmd } from './commands/ask';
 import { echo as echo_cmd } from './commands/echo';
 import { check_stolen as checkstolen_cmd } from './commands/check_stolen';
 import { status as status_cmd } from './commands/status';
+import { inspect as inspect_cmd } from './commands/inspect';
 
 import nacl from 'tweetnacl';
 import { Buffer } from 'node:buffer';
@@ -50,6 +51,7 @@ const commands: Record<string, Command> = {
 	echo_cmd,
 	checkstolen_cmd,
 	status_cmd,
+	inspect_cmd,
 };
 const long_commands: Record<string, Command> = {
 	ask_cmd,
