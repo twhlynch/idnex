@@ -124,6 +124,14 @@ declare global {
 		type Message = {
 			content: string;
 			embeds: Embed[];
+			interaction_metadata?: {
+				name: string;
+				user: {
+					global_name: string;
+					username: string;
+					id: string;
+				};
+			};
 		};
 	}
 }
