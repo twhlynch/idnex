@@ -14,7 +14,6 @@ import { get_hardest as gethardest_cmd } from './commands/get_hardest';
 import { hardest as hardest_cmd } from './commands/hardest';
 import { get_leaderboard as get_leaderboard_cmd } from './commands/get_leaderboard';
 import { get_creator as get_creator_cmd } from './commands/get_creator';
-import { get_complexity as get_complexity_cmd } from './commands/get_complexity';
 import { get_iterations as get_iterations_cmd } from './commands/get_iterations';
 import { get_thumbnail as get_thumbnail_cmd } from './commands/get_thumbnail';
 import { script as script_cmd } from './commands/script';
@@ -44,7 +43,6 @@ const commands: Record<string, Command> = {
 	hardest_cmd,
 	get_leaderboard_cmd,
 	get_creator_cmd,
-	get_complexity_cmd,
 	get_iterations_cmd,
 	get_thumbnail_cmd,
 	script_cmd,

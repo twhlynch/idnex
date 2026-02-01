@@ -250,11 +250,6 @@ export const commands = [
 		...USER_COMMAND,
 	},
 	{
-		name: 'Get complexity',
-		...MESSAGE_ACTION,
-		...USER_COMMAND,
-	},
-	{
 		name: 'Get iterations',
 		...MESSAGE_ACTION,
 		...USER_COMMAND,
