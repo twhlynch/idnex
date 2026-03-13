@@ -180,29 +180,87 @@ export async function get_player(query: string): Promise<UserInfo | null> {
 
 export async function get_levels(
 	title: string | null = null,
-	creator: string | null = null,
 ): Promise<LevelDetails[] | null> {
 	let url = `${GRAB_API_URL}list?max_format_version=${FORMAT_VERSION}`;
 	url += title ? `&type=search&search_term=${title}` : '&type=newest';
-	return await request<LevelDetails[]>(url, (data) => {
-		if (creator?.length) {
-			return data.filter((level) =>
-				level.creators?.find((player) =>
-					player.toLowerCase().includes(creator.toLowerCase()),
-				),
-			);
-		}
-		return data;
-	});
+	return await request<LevelDetails[]>(url);
 }
 
 export async function get_level(
 	title: string | null = null,
 	creator: string | null = null,
 ): Promise<LevelDetails | null> {
-	const levels = await get_levels(title, creator);
+	const levels = await get_levels(title);
 	if (levels === null || !levels.length) return null;
 
+	// verified first
+	levels.sort((a, b) => {
+		return +(b.tags?.includes('ok') ?? 0) - +(a.tags?.includes('ok') ?? 0);
+	});
+
+	const clean_title = title ?? '';
+	const clean_creator = creator ?? '';
+	const title_lower = clean_title.toLowerCase();
+	const creator_lower = clean_creator.toLowerCase();
+
+	// match the title
+	if (!creator) {
+		const exact_match = levels.find((level) => level.title === clean_title);
+		if (exact_match) return exact_match;
+
+		const insensitive_match = levels.find(
+			(level) => level.title?.toLowerCase() === title_lower,
+		);
+		if (insensitive_match) return insensitive_match;
+
+		const includes_match = levels.find((level) =>
+			level.title?.toLowerCase().includes(title_lower),
+		);
+		if (includes_match) return includes_match;
+	}
+
+	// match title and creator
+	const exact_match = levels.find(
+		(level) =>
+			level.title === clean_title &&
+			level.creators?.find((player) => player == clean_creator),
+	);
+	if (exact_match) return exact_match;
+
+	const insensitive_match = levels.find(
+		(level) =>
+			level.title?.toLowerCase() === title_lower &&
+			level.creators?.find(
+				(player) => player.toLowerCase() == creator_lower,
+			),
+	);
+	if (insensitive_match) return insensitive_match;
+
+	const insensitive_title_match = levels.find(
+		(level) =>
+			level.title?.toLowerCase() === title_lower &&
+			level.creators?.find((player) =>
+				player.toLowerCase().includes(creator_lower),
+			),
+	);
+	if (insensitive_title_match) return insensitive_title_match;
+
+	const includes_match = levels.find(
+		(level) =>
+			level.title?.toLowerCase().includes(title_lower) &&
+			level.creators?.find((player) =>
+				player.toLowerCase().includes(creator_lower),
+			),
+	);
+	if (includes_match) return includes_match;
+
+	// match title
+	const title_includes_match = levels.find((level) =>
+		level.title?.toLowerCase().includes(title_lower),
+	);
+	if (title_includes_match) return title_includes_match;
+
+	// fallback
 	return levels[0];
 }
 
