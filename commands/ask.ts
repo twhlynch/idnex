@@ -260,7 +260,7 @@ async function build_prompt(
 			{
 				headers: {
 					'User-Agent':
-						'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+						'idnex-discord-bot/1.0 (https://github.com/twhlynch/idnex, support@grabvr.tools)',
 				},
 			},
 		);
