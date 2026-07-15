@@ -1,5 +1,20 @@
-import { API_URL, GEMINI_API } from '../config';
+import { API_URL, GROQ_API } from '../config';
 import * as UTILS from '../utils';
+
+type Message = {
+	role: string;
+	content: string;
+};
+
+type Prompt = {
+	model: string;
+	messages: Message[];
+};
+
+type Answer = {
+	choices: { message: Message }[];
+	usage: { total_time: number };
+};
 
 export const ask: Command = async (json, env) => {
 	const { message } = UTILS.options(json);
@@ -20,25 +35,26 @@ export const ask: Command = async (json, env) => {
 	await insert_message(env, user_name, message); // can fail
 
 	const models = {
-		'gemini-2.5-flash-lite': 20,
-		'gemini-2.5-flash': 20,
-		'gemma-3-12b-it': 20,
-		'gemma-3-1b-it': 20,
-		'gemma-3-27b-it': 20,
-		'gemma-3-2b-it': 20,
-		'gemma-3-4b-it': 20,
+		'llama-3.1-8b-instant': 6,
+		'llama-3.3-70b-versatile': 12,
+		'openai/gpt-oss-120b': 8,
+		'openai/gpt-oss-20b': 8,
 	};
 	const model = weighted_random(models);
 
-	const prompt_1 = await build_prompt(
-		user_name,
-		message,
-		messages,
-		{ prompt: true },
-		env,
-	);
-	const response_1 = await generate(model, prompt_1, env);
-	if (!response_1) return UTILS.error('Failed to generate response');
+	const prompt_1: Prompt = {
+		...(await build_prompt(
+			user_name,
+			message,
+			messages,
+			{ prompt: true },
+			env,
+		)),
+		model,
+	};
+	const res_1 = await generate(prompt_1, env);
+	if (!res_1) return UTILS.error('Failed to generate response');
+	const [response_1, time_1] = res_1;
 
 	const options: Record<string, boolean | string> = {};
 	if (response_1)
@@ -53,22 +69,28 @@ export const ask: Command = async (json, env) => {
 			}
 		});
 
-	const debug_string = `-# Debug: ${model}: ${response_1}`;
+	let debug_string = `-# Debug: ${model}@${time_1.toFixed(1)}: ${response_1}`;
 
-	const prompt_2 = await build_prompt(
-		user_name,
-		message,
-		messages,
-		{
-			personality: true,
-			response: true,
-			...options,
-		},
-		env,
-	);
-	const response_2 = await generate(model, prompt_2, env);
-	if (!response_2)
+	const prompt_2 = {
+		...(await build_prompt(
+			user_name,
+			message,
+			messages,
+			{
+				personality: true,
+				response: true,
+				...options,
+			},
+			env,
+		)),
+		model,
+	};
+	const res_2 = await generate(prompt_2, env);
+	if (!res_2)
 		return UTILS.error('Failed to generate response\n' + debug_string);
+	const [response_2, time_2] = res_2;
+
+	debug_string = `-# Debug: ${model}@${(time_1 + time_2).toFixed(1)}: ${response_1}`;
 
 	const clean_message = response_2.slice(0, 1700).trim();
 	await insert_message(env, 'idnex', clean_message);
@@ -128,25 +150,32 @@ function weighted_random(models: Record<string, number>): string {
 }
 
 async function generate(
-	model: string,
 	prompt: object,
 	env: Ctx,
-): Promise<string | null> {
-	const endpoint = `${GEMINI_API}models/${model}:generateContent?key=${env.GEMINI_KEY}`;
+): Promise<[string, number] | null> {
+	const endpoint = `${GROQ_API}`;
 	const response = await fetch(endpoint, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
+			Authorization: `Bearer ${env.GROQ_KEY}`,
 		},
 		body: JSON.stringify(prompt),
 	});
 
+	if (response.status == 429) {
+		return null;
+	}
+
 	try {
-		const data = await response.json<{
-			candidates: { content: { parts: { text: string }[] } }[];
-		}>();
-		if (!data?.candidates?.length) console.error(data);
-		return data?.candidates?.[0]?.content?.parts?.[0]?.text;
+		const data = await response.json<Answer>();
+		if (!data?.choices?.length) console.error(data);
+		const text = data?.choices?.[0]?.message?.content;
+		const time = data.usage.total_time;
+		const parts = text
+			.split(/<think>[\s\S]*?<\/think>/g)
+			.map((part) => part.trim());
+		return [parts.join(''), time];
 	} catch (e) {
 		console.error(e);
 		return null;
@@ -176,7 +205,7 @@ async function build_prompt(
 		hardest_maps?: any;
 	},
 	_env: Ctx,
-): Promise<{ contents: { role: string; parts: { text: string }[] }[] }> {
+): Promise<Pick<Prompt, 'messages'>> {
 	let prompt = ``;
 
 	prompt += GENERAL_PROMPT();
@@ -283,22 +312,14 @@ async function build_prompt(
 	if (options.prompt) prompt += INITIAL_PROMPT();
 
 	return {
-		contents: [
+		messages: [
 			{
-				role: 'model',
-				parts: [
-					{
-						text: prompt,
-					},
-				],
+				role: 'system',
+				content: prompt,
 			},
 			{
 				role: 'user',
-				parts: [
-					{
-						text: user_name + ': ' + message,
-					},
-				],
+				content: user_name + ': ' + message,
 			},
 		],
 	};

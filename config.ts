@@ -18,5 +18,5 @@ export const STATS_API_URL = `${STATS_URL}/stats_data/`;
 export const ADMIN_USER = `649165311257608192`;
 export const LIST_MOD_ROLE_ID = '1224307852248612986';
 
-// gemini
-export const GEMINI_API = `https://generativelanguage.googleapis.com/v1beta/`;
+// ai
+export const GROQ_API = `https://api.groq.com/openai/v1/chat/completions`;
