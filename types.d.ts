@@ -14,14 +14,14 @@ declare global {
 		identifier: string;
 		iteration: number;
 		data_key: string;
-		complexity: number;
+		complexity?: number;
 		title?: string;
 		description?: string;
 		creators?: Array<string>;
 		tags?: Array<string | 'ok'>;
 		verification_time?: number;
-		images?: { thumb: { key: string } };
-		iteration_image: number;
+		images?: { thumb?: { key?: string } };
+		iteration_image?: number;
 		statistics?: {
 			total_played?: number;
 			difficulty?: number;
@@ -42,17 +42,17 @@ declare global {
 	export type UserInfo = {
 		user_id: string;
 		user_name?: string;
-		is_admin: boolean;
-		is_developer: boolean;
-		is_supermoderator: boolean;
-		is_moderator: boolean;
-		is_verifier: boolean;
-		is_creator: boolean;
-		user_level_count: number;
-		active_customizations: {
-			player_color_primary: { color: Array<number> };
-			player_color_secondary: { color: Array<number> };
-			items: Record<string, string>;
+		is_admin?: boolean;
+		is_developer?: boolean;
+		is_supermoderator?: boolean;
+		is_moderator?: boolean;
+		is_verifier?: boolean;
+		is_creator?: boolean;
+		user_level_count?: number;
+		active_customizations?: {
+			player_color_primary?: { color?: Array<number> };
+			player_color_secondary?: { color?: Array<number> };
+			items?: Record<string, string>;
 		};
 	};
 

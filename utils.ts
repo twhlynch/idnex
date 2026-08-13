@@ -367,7 +367,7 @@ export function list_stats(levels: LevelDetails[]) {
 
 		if (is_verfied) stats.verified_maps += 1;
 		stats.todays_plays += change ?? 0;
-		stats.complexity += complexity;
+		stats.complexity += complexity ?? 0;
 		stats.iterations += iteration || 1;
 
 		if (statistics) {
@@ -448,7 +448,7 @@ export function player_stats_embed(
 
 	const join_string = `<t:${user_id_timestamp(user_id)}>`;
 
-	const primary = (player_color_primary.color || [0, 0, 0])
+	const primary = (player_color_primary?.color || [0, 0, 0])
 		.map((c) => color_component_to_hex(c))
 		.join('');
 
@@ -521,10 +521,10 @@ export function player_info_embed(
 		});
 	}
 
-	const primary = (player_color_primary.color || [0, 0, 0])
+	const primary = (player_color_primary?.color || [0, 0, 0])
 		.map((c) => color_component_to_hex(c))
 		.join('');
-	const secondary = (player_color_secondary.color || [0, 0, 0])
+	const secondary = (player_color_secondary?.color || [0, 0, 0])
 		.map((c) => color_component_to_hex(c))
 		.join('');
 
