@@ -36,7 +36,6 @@ export const ask: Command = async (json, env) => {
 
 	const models = {
 		'llama-3.1-8b-instant': 6,
-		'llama-3.3-70b-versatile': 12,
 		'openai/gpt-oss-120b': 8,
 		'openai/gpt-oss-20b': 8,
 	};
