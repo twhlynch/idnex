@@ -35,7 +35,7 @@ export const ask: Command = async (json, env) => {
 	await insert_message(env, user_name, message); // can fail
 
 	const models = {
-		'llama-3.1-8b-instant': 6,
+		'qwen/qwen3.8-27b': 8,
 		'openai/gpt-oss-120b': 8,
 		'openai/gpt-oss-20b': 8,
 	};
