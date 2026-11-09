@@ -121,6 +121,13 @@ export async function level_embed(
 	};
 }
 
+export async function request_text(url: string): Promise<string | null> {
+	const response = await fetch(url);
+	if (!response.ok) return null;
+
+	return await response.text();
+}
+
 export async function request<T>(
 	url: string,
 	callback = (data: T) => data,
