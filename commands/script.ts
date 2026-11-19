@@ -6,8 +6,8 @@ export const script: Command = async (json, _env) => {
 		filter,
 		limit,
 		return: ret,
-	} = UTILS.options<{ filter: string; limit: string; return: string }>(json);
-	if (!filter?.length || !limit?.length || !ret?.length)
+	} = UTILS.options<{ filter: string; limit: number; return: string }>(json);
+	if (!filter || !limit || !ret)
 		return UTILS.error('All parameters are required');
 
 	const data = await UTILS.get_all_levels();
